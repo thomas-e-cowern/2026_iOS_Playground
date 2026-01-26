@@ -46,11 +46,11 @@ extension View {
     ) -> some View {
         modifier(StateModifier(state: state, isBlocking: isBlocking, onRetry: onRetry, overlay: overlay))
     }
-        
-        func asyncOverlay(
-            state: AsyncUIState,
-            isBlocking: Bool = true,
-            onRetry: (@MainActor () async -> Void)? = nil
+    
+    func asyncOverlay(
+        state: AsyncUIState,
+        isBlocking: Bool = true,
+        onRetry: (@MainActor () async -> Void)? = nil
     ) -> some View {
         asyncOverlay(state: state, isBlocking: isBlocking, onRetry: onRetry) { state, retry in
             DefaultAsyncOverlay(state: state, retry: retry)
@@ -99,7 +99,7 @@ private struct DefaultAsyncOverlay: View {
                             }
                         }) {
                             Text("Try again")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.white)
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                         }
