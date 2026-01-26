@@ -10,12 +10,41 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            List {
+                Button("Load (Success -> Idle)") {
+                    Task {
+                        await loadSuccess()
+                    }
+                }
+                
+                Button("Load (Empty)") {
+                    Task {
+                        await loadEmpty()
+                    }
+                }
+                
+                Button("Load (Fail)") {
+                    Task {
+                        await loadFail()
+                    }
+                }
+            }
         }
-        .padding()
+    }
+    
+    @MainActor
+    private func loadSuccess() async {
+            
+    }
+    
+    @MainActor
+    private func loadEmpty() async {
+        
+    }
+    
+    @MainActor
+    private func loadFail() async {
+        
     }
 }
 
