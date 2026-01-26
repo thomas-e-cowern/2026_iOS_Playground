@@ -55,7 +55,55 @@ private struct DefaultAsyncOverlay: View {
     
     var body: some View {
         ZStack {
+            Rectangle()
+                .fill(.blue.opacity(0.5))
+                .ignoresSafeArea()
             
+            VStack(spacing: 15) {
+                switch state {
+                case .idle:
+                    EmptyView()
+                case .loading:
+                    ProgressView()
+                    Text("Loading...")
+                        .font(.headline)
+                case .empty(let message):
+                    Image(systemName: "tray")
+                        .font(.system(size: 30, weight: .semibold))
+                    Text(message)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                case .failure(let message):
+                    Image(systemName: "exclamation.triangle.fill")
+                        .font(.system(size: 30, weight: .semibold))
+                    Text("Something went wrong")
+                        .font(.headline)
+                    Text(message)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                    
+                    if let retry = retry {
+                        Button(action: {
+                            Task {
+                                await retry()
+                            }
+                        }) {
+                            Text("Try again")
+                                .foregroundColor(.blue)
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top, 6)
+                    }
+                }
+            }
+            .padding(20)
+            .frame(width: 320)
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .shadow(radius: 20)
+            .padding()
         }
     }
 }
