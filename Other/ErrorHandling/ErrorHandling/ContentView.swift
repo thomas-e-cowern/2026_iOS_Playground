@@ -8,14 +8,27 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var capsules: [Capsule] = []
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            VStack {
+                List(capsules, id: \.id) { capsule in
+                    NavigationLink(destination: CapsuleView(capsule: capsule)) {
+                        Text(capsule.id)
+                    }
+                }
+                .navigationTitle("Capsules")
+                .task {
+                    do {
+                        capsules = try await Capsule.getAllCapsules()
+                    } catch {
+                        print("There was an error getting capsules")
+                    }
+                }
+            }
         }
-        .padding()
     }
 }
 
