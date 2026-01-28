@@ -7,6 +7,7 @@
 import SwiftUI
 import Observation
 
+
 @Observable
 class ComboController {
 
@@ -20,12 +21,18 @@ class ComboController {
     }
     
     func getAllCapsules(withError: Bool) async throws {
+        print("withError is \(withError)")
         if withError {
+            print("There's an error....")
             capsuleError = CapsuleError.failedLoading
-            
         } else {
+            print("You should see capsules....")
             self.capsules = try await apiService.getAllCapsules()
         }
+    }
+    
+    func clearError() {
+        capsuleError = nil
     }
 }
 
@@ -39,3 +46,4 @@ enum CapsuleError: Error {
         }
     }
 }
+

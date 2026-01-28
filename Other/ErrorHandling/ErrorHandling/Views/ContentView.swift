@@ -10,25 +10,27 @@ import SwiftUI
 struct ContentView: View {
     
     @Environment(ComboController.self) private var controller
-//    @State private var capsules: [Capsule] = []
     
     var body: some View {
         NavigationStack {
             VStack {
-                List(controller.capsules, id: \.id) { capsule in
-                    NavigationLink(destination: CapsuleView(capsule: capsule)) {
-                        Text(capsule.id)
+                ZStack {
+                    
+                    List(controller.capsules, id: \.id) { capsule in
+                        NavigationLink(destination: CapsuleView(capsule: capsule)) {
+                            Text(capsule.id)
+                        }
                     }
-                }
-                
-                if let error = controller.capsuleError {
-                    Text("There has been an error...")
+                    
+                    if controller.capsuleError != nil {
+                        ErrorView(errorTitle: "There was an error....")
+                    }
                 }
             }
             .navigationTitle("Capsules")
                 .task {
                     do {
-                        try await controller.getAllCapsules(withError: false)
+                        try await controller.getAllCapsules(withError: true)
                     } catch {
                         print("There was an error getting capsules: \(error)")
                     }
