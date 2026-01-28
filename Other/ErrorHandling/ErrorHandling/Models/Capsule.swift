@@ -5,7 +5,7 @@
 //  Created by Thomas Cowern on 1/27/26.
 //
 
-import Foundation
+import SwiftUI
 
 struct Capsule: Codable {
     let id: String
@@ -21,21 +21,5 @@ struct Capsule: Codable {
 //        case lastUpdate = "last_update"
 //        case launches, serial, status, type, id
 //    }
-    
-    static func getAllCapsules() async throws -> [Capsule] {
-        
-        let urlString = "https://api.spacexdata.com/v4/capsules"
-        guard let url = URL(string: urlString) else {
-            throw NSError(domain: "Invalid URL", code: 0, userInfo: nil)
-        }
-        print("passed guard")
-        let (data, response) = try await URLSession.shared.data(from: url)
-        print("data: \(data)")
-        print("response: \(response)")
-        let decoder = JSONDecoder()
-        let decodedData = try decoder.decode([Capsule].self, from: data)
-        print(decodedData)
-        return decodedData
-    }
 }
 
