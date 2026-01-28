@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct ErrorHandlingApp: App {
+    
+    private var apiService = APIService()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(ComboController(apiService: apiService))
         }
     }
 }
