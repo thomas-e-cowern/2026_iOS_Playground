@@ -20,15 +20,19 @@ struct ContentView: View {
                         Text(capsule.id)
                     }
                 }
-                .navigationTitle("Capsules")
+                
+                if let error = controller.capsuleError {
+                    Text("There has been an error...")
+                }
+            }
+            .navigationTitle("Capsules")
                 .task {
                     do {
-                        try await controller.getAllCapsules()
+                        try await controller.getAllCapsules(withError: false)
                     } catch {
                         print("There was an error getting capsules: \(error)")
                     }
                 }
-            }
         }
     }
 }

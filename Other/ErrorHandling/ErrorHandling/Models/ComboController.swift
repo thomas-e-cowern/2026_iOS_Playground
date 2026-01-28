@@ -11,14 +11,31 @@ import Observation
 class ComboController {
 
     var capsules: [Capsule] = []
+    var capsuleError: CapsuleError? = nil
+    
     let apiService: APIService
     
     init(apiService: APIService) {
         self.apiService = apiService
     }
     
-    func getAllCapsules() async throws {
-        self.capsules = try await apiService.getAllCapsules()
+    func getAllCapsules(withError: Bool) async throws {
+        if withError {
+            capsuleError = CapsuleError.failedLoading
+            
+        } else {
+            self.capsules = try await apiService.getAllCapsules()
+        }
     }
 }
 
+enum CapsuleError: Error {
+    case failedLoading
+    
+    var description: String {
+        switch self {
+        case .failedLoading:
+            return "Failed to load capsules."
+        }
+    }
+}
