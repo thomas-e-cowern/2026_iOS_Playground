@@ -9,12 +9,13 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var capsules: [Capsule] = []
+    @Environment(ComboController.self) private var controller
+//    @State private var capsules: [Capsule] = []
     
     var body: some View {
         NavigationStack {
             VStack {
-                List(capsules, id: \.id) { capsule in
+                List(controller.capsules, id: \.id) { capsule in
                     NavigationLink(destination: CapsuleView(capsule: capsule)) {
                         Text(capsule.id)
                     }
@@ -22,9 +23,9 @@ struct ContentView: View {
                 .navigationTitle("Capsules")
                 .task {
                     do {
-                        capsules = try await Capsule.getAllCapsules()
+                        try await controller.getAllCapsules()
                     } catch {
-                        print("There was an error getting capsules")
+                        print("There was an error getting capsules: \(error)")
                     }
                 }
             }
@@ -34,4 +35,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(ComboController(apiService: APIService()))
 }
