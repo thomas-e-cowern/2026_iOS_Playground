@@ -29,13 +29,14 @@ fileprivate struct TabItemView<Content: View>: View {
     let tag: Int
     let proxy: GeometryProxy
     @ViewBuilder var content: () -> Content
-    @ScaledMetric var maxHeight:CGFloat = 70
+    @ScaledMetric var maxHeight: CGFloat = 70
     
     var body: some View {
         content()
             .padding(14)
-            .frame(maxWidth: proxy.size.width / 6)
+            .frame(maxWidth: proxy.size.width / 3)
             .frame(minHeight: 0, maxHeight: maxHeight)
+            .glassEffect(selected == tag ? .clear.interactive() : .identity)
             .foregroundStyle(selected == tag ? Color.accentColor : .secondary)
             .onTapGesture {
                 selected = tag
@@ -72,19 +73,31 @@ struct MainView: View {
                             TabItemView(selected: $selection, tag: 0, proxy: proxy) {
                                 CustomTabItemView(systemName: "house", text: "Home")
                             }
+                            
+//                            Spacer(minLength: 0)
+                            
+                            
                             TabItemView(selected: $selection, tag: 1, proxy: proxy) {
                                 CustomTabItemView(systemName: "chart.bar", text: "Insights")
                             }
+                            
+//                            Spacer(minLength: 0)
+                            
                             TabItemView(selected: $selection, tag: 2, proxy: proxy) {
                                 CustomTabItemView(systemName: "headphones", text: "Meditate")
                             }
                             Spacer(minLength: 0)
                         }
                         .padding(4)
-                        .background(.ultraThinMaterial)
-                        Spacer(minLength: 0)
+//                        .background(.ultraThinMaterial)
+                        .background {
+                            Color.clear.glassEffect(.regular, in: .capsule)
+                                .ignoresSafeArea()
+                        }
+                        .padding(.horizontal, 8)
                     }
                 }
+                .padding(.bottom, 5)
             }
             .dynamicTypeSize(.large)
         }
