@@ -23,7 +23,25 @@ fileprivate struct CustomTabItemView: View {
     }
 }
 
-
+fileprivate struct TabItemView<Content: View>: View {
+    
+    @Binding var selected: Int
+    let tag: Int
+    let proxy: GeometryProxy
+    @ViewBuilder var content: () -> Content
+    @ScaledMetric var maxHeight:CGFloat = 70
+    
+    var body: some View {
+        content()
+            .padding(14)
+            .frame(maxWidth: proxy.size.width / 6)
+            .frame(minHeight: 0, maxHeight: maxHeight)
+            .foregroundStyle(selected == tag ? Color.accentColor : .secondary)
+            .onTapGesture {
+                selected = tag
+            }
+    }
+}
 
 struct MainView: View {
     var body: some View {
