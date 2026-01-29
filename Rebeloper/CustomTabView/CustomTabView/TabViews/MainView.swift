@@ -38,8 +38,13 @@ fileprivate struct TabItemView<Content: View>: View {
             .frame(minHeight: 0, maxHeight: maxHeight)
             .glassEffect(selected == tag ? .clear.interactive() : .identity)
             .foregroundStyle(selected == tag ? Color.accentColor : .secondary)
+//            .onTapGesture {
+//                    selected = tag
+//            }
             .onTapGesture {
-                selected = tag
+                withAnimation(.spring(.bouncy)) {
+                    selected = tag
+                }
             }
     }
 }
@@ -74,14 +79,9 @@ struct MainView: View {
                                 CustomTabItemView(systemName: "house", text: "Home")
                             }
                             
-//                            Spacer(minLength: 0)
-                            
-                            
                             TabItemView(selected: $selection, tag: 1, proxy: proxy) {
                                 CustomTabItemView(systemName: "chart.bar", text: "Insights")
                             }
-                            
-//                            Spacer(minLength: 0)
                             
                             TabItemView(selected: $selection, tag: 2, proxy: proxy) {
                                 CustomTabItemView(systemName: "headphones", text: "Meditate")
@@ -89,7 +89,6 @@ struct MainView: View {
                             Spacer(minLength: 0)
                         }
                         .padding(4)
-//                        .background(.ultraThinMaterial)
                         .background {
                             Color.clear.glassEffect(.regular, in: .capsule)
                                 .ignoresSafeArea()
