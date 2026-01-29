@@ -9,7 +9,11 @@ import SwiftUI
 
 struct FeedView: View {
     var body: some View {
-        Text("Feed View")
+        ZStack {
+            Color.blue
+                .ignoresSafeArea()
+            Text("Feed View")
+        }
     }
 }
 

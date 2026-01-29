@@ -9,7 +9,11 @@ import SwiftUI
 
 struct InsightsView: View {
     var body: some View {
-        Text("Insight View")
+        ZStack {
+            Color.red
+                .ignoresSafeArea()
+            Text("Insights View")
+        }
     }
 }
 

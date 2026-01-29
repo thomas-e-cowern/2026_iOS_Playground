@@ -44,8 +44,23 @@ fileprivate struct TabItemView<Content: View>: View {
 }
 
 struct MainView: View {
+    
+    @State private var selection: Int = 0
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ZStack {
+            switch(selection) {
+            case 0:
+                FeedView()
+            case 1:
+                InsightsView()
+            case 2:
+                MeditateView()
+            default:
+                EmptyView()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

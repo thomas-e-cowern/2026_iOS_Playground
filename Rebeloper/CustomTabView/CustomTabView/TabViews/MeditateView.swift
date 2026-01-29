@@ -9,7 +9,11 @@ import SwiftUI
 
 struct MeditateView: View {
     var body: some View {
-        Text("Meditate View")
+        ZStack {
+            Color.green
+                .ignoresSafeArea()
+            Text("Meditate View")
+        }
     }
 }
 
