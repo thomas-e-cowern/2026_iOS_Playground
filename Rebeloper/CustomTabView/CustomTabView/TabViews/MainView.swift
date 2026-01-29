@@ -61,6 +61,33 @@ struct MainView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            GeometryReader { proxy in
+                VStack {
+                    Spacer()
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        HStack {
+                            Spacer(minLength: 0)
+                            TabItemView(selected: $selection, tag: 0, proxy: proxy) {
+                                CustomTabItemView(systemName: "house", text: "Home")
+                            }
+                            TabItemView(selected: $selection, tag: 1, proxy: proxy) {
+                                CustomTabItemView(systemName: "chart.bar", text: "Insights")
+                            }
+                            TabItemView(selected: $selection, tag: 2, proxy: proxy) {
+                                CustomTabItemView(systemName: "headphones", text: "Meditate")
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(4)
+                        .background(.ultraThinMaterial)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .dynamicTypeSize(.large)
+        }
     }
 }
 
