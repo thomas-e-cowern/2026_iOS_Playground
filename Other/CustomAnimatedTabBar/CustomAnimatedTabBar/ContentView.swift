@@ -9,12 +9,12 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var selectedTab: Tab = .house
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            CustomTabBar(selectedTab: $selectedTab)
         }
         .padding()
     }
