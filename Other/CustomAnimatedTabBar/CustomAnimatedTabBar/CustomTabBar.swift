@@ -56,8 +56,9 @@ struct CustomTabBar: View {
                 }
             }
             .frame(width: nil, height: 60)
-            .background(.thinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+//            .background(.thinMaterial)
+            .glassEffect()
+//            .clipShape(RoundedRectangle(cornerRadius: 10))
             .padding()
         }
     }
