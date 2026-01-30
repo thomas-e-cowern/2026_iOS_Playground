@@ -12,8 +12,13 @@ struct ContentView: View {
     
     @State private var selectedTab: Tab = .house
     
+    init() {
+        UITabBar.appearance().isHidden = false
+    }
+    
     var body: some View {
         VStack {
+            Spacer()
             CustomTabBar(selectedTab: $selectedTab)
         }
         .padding()
