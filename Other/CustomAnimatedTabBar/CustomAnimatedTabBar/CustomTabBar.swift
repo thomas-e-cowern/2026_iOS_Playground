@@ -18,8 +18,24 @@ enum Tab: String, CaseIterable, Hashable {
 struct CustomTabBar: View {
     
     @Binding var selectedTab: Tab
+    
     private var fillImage: String {
         selectedTab.rawValue + ".fill"
+    }
+    
+    private var tabColor: Color {
+        switch selectedTab {
+        case .house:
+            return .blue
+        case .message:
+            return .red
+        case .person:
+            return .yellow
+        case .leaf:
+            return .green
+        case .gearshape:
+            return .purple
+        }
     }
     
     var body: some View {
@@ -29,10 +45,10 @@ struct CustomTabBar: View {
                     Spacer()
                     Image(systemName: selectedTab == tab ? fillImage : tab.rawValue)
                         .scaleEffect(tab == selectedTab ? 1.25 : 1.0)
-                        .foregroundStyle(selectedTab == tab ? .red : .secondary)
+                        .foregroundStyle(selectedTab == tab ? tabColor : .secondary)
                         .font(.system(size: 22))
                         .onTapGesture {
-                            withAnimation(.easeIn(duration: 0.5)) {
+                            withAnimation(.easeIn(duration: 0.1)) {
                                 selectedTab = tab
                             }
                         }
