@@ -8,14 +8,33 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var minValue: Double = 0.0
+    @State private var maxValue: Double = 100.0
+    @State private var currentValue: Double = 60.0
+    
+    @State private var pageIndex: Int = 0
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Slider(value: $currentValue, in: minValue...maxValue)
+                .padding(.horizontal)
+            
+            TabView(selection: $pageIndex) {
+                VStack(spacing: 100) {
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Image(systemName: "flame")
+                            .foregroundStyle(.red.opacity(currentValue))
+                    } currentValueLabel: {
+                        Text("\(Int(currentValue))")
+                    }
+                    .gaugeStyle(.accessoryCircular)
+                    .tint(.blue)
+                    .scaleEffect(2)
+                }
+            }
+            .tabViewStyle(.page)
         }
-        .padding()
     }
 }
 
