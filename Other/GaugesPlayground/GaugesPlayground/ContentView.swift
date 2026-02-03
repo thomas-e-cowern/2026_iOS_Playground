@@ -45,12 +45,13 @@ struct ContentView: View {
                     .scaleEffect(2)
                     
                     Gauge(value: currentValue, in: minValue...maxValue) {
-                        Text("\(Int(currentValue))")
-                            .font(.system(size: 15, weight: .bold))
+                        Text("\(Int(currentValue))%")
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(.red.opacity(currentValue))
                     } currentValueLabel: {
                         Text("❤️")
-                            .font(.title3)
+                            .font(.system(size: currentValue * 0.35))
+                            .opacity(currentValue == 0 ? 0 : 1)
                     }
                     .gaugeStyle(.accessoryCircular)
                     .tint(.blue)
