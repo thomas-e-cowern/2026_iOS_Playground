@@ -27,6 +27,30 @@ struct ContentView: View {
                             .foregroundStyle(.red.opacity(currentValue))
                     } currentValueLabel: {
                         Text("\(Int(currentValue))")
+                            .font(.caption)
+                    }
+                    .gaugeStyle(.accessoryCircular)
+                    .tint(.blue)
+                    .scaleEffect(2)
+                    
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Image(systemName: "flame")
+                            .foregroundStyle(.red.opacity(currentValue))
+                    } currentValueLabel: {
+                        Text("\(Int(currentValue))")
+                            .font(.title3)
+                    }
+                    .gaugeStyle(.accessoryCircular)
+                    .tint(.blue)
+                    .scaleEffect(2)
+                    
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("\(Int(currentValue))")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.red.opacity(currentValue))
+                    } currentValueLabel: {
+                        Text("❤️")
+                            .font(.title3)
                     }
                     .gaugeStyle(.accessoryCircular)
                     .tint(.blue)
