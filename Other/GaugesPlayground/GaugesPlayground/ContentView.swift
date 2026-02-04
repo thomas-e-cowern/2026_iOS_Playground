@@ -161,6 +161,12 @@ struct ContentView: View {
                     }
                     .padding()
                     .tag(4)
+                    
+                    VStack {
+                        HorizontalFillProgressCircle(progress: currentValue, size: 150)
+                    }
+                    .padding()
+                    .tag(5)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .always))
                 .onAppear {
