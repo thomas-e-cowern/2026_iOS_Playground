@@ -24,6 +24,7 @@ struct ContentView: View {
                 .padding(.horizontal)
             
             TabView(selection: $pageIndex) {
+                
                 VStack(spacing: 100) {
                     Gauge(value: currentValue, in: minValue...maxValue) {
                         Image(systemName: "flame")
@@ -103,6 +104,44 @@ struct ContentView: View {
                 }
                 .padding()
                 .tag(1)
+                
+                VStack(spacing: 100) {
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("")
+                    }
+                    .gaugeStyle(.accessoryLinearCapacity)
+                    .tint(.yellow)
+                    
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("Downloading...")
+                    } currentValueLabel: {
+                        Text("\(Int(currentValue))%")
+                            .font(.headline)
+                    } minimumValueLabel: {
+                        Text("\(Int(minValue))")
+                    } maximumValueLabel: {
+                        Text("\(Int(maxValue))")
+                    }
+                    .gaugeStyle(.accessoryLinearCapacity)
+                    .tint(.orange)
+                    
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("")
+                    } currentValueLabel: {
+                        Text("")
+                    } minimumValueLabel: {
+                        Text("\(Int(minValue))")
+                    } maximumValueLabel: {
+                        Text("\(Int(maxValue))")
+                    }
+                    .gaugeStyle(.accessoryLinearCapacity)
+                    .tint(.orange)
+
+                }
+                .padding()
+                .tag(2)
+                
+                
             }
             .tabViewStyle(.page)
         }
