@@ -16,6 +16,9 @@ struct ContentView: View {
     @State private var pageIndex: Int = 0
     
     var body: some View {
+        
+        let fraction = (currentValue - minValue) / (maxValue - minValue)
+        
         VStack {
             Slider(value: $currentValue, in: minValue...maxValue)
                 .padding(.horizontal)
@@ -54,9 +57,19 @@ struct ContentView: View {
                             .opacity(currentValue == 0 ? 0 : 1)
                     }
                     .gaugeStyle(.accessoryCircular)
-                    .tint(.blue)
+                    .tint(
+                        AngularGradient(colors: [.pink, .purple, .pink], center: .center, startAngle: .degrees(-270), endAngle: .degrees(360 * fraction))
+                    )
                     .scaleEffect(2)
+                } //: End of VStack
+                .padding()
+                .tag(0)
+                
+                VStack(spacing: 100) {
+                    
                 }
+                .padding()
+                .tag(1)
             }
             .tabViewStyle(.page)
         }
