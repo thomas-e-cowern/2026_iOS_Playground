@@ -66,7 +66,40 @@ struct ContentView: View {
                 .tag(0)
                 
                 VStack(spacing: 100) {
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("Storage")
+                    } currentValueLabel: {
+                        Text("\(Int(currentValue))")
+                    } minimumValueLabel: {
+                        Text("\(Int(minValue))")
+                    } maximumValueLabel: {
+                        Text("\(Int(maxValue))")
+                    }
+                    .tint(.pink)
                     
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("Storage")
+                    } currentValueLabel: {
+                        Text("\(Int(currentValue))")
+                    } minimumValueLabel: {
+                        Text("\(Int(minValue))")
+                    } maximumValueLabel: {
+                        Text("\(Int(maxValue))")
+                    }
+                    .tint(Color.blue.gradient)
+                    Gauge(value: currentValue, in: minValue...maxValue) {
+                        Text("Storage")
+                    } currentValueLabel: {
+                        Text("\(Int(currentValue))")
+                    } minimumValueLabel: {
+                        Text("\(Int(minValue))")
+                    } maximumValueLabel: {
+                        Text("\(Int(maxValue))")
+                    }
+                    .tint(
+                        LinearGradient(gradient: Gradient(colors: [.blue, .red]), startPoint: .leading, endPoint: .trailing)
+                    )
+
                 }
                 .padding()
                 .tag(1)
