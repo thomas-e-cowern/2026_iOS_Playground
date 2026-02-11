@@ -8,14 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var oo = JokeOO()
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            if let joke = oo.singleJoke {
+                Text(joke.category)
+            } else {
+                Text("Loading joke…")
+            }
         }
-        .padding()
+        .task {
+            await oo.fetchJoke()
+        }
     }
 }
 
