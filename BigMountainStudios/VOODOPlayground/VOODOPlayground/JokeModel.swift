@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct JokeModel: Identifiable {
+struct JokeModel: Identifiable, Codable {
     var id: Int
     var joke: String
     var error: Bool
