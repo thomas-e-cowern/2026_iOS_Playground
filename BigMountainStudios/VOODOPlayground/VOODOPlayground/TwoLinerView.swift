@@ -8,11 +8,20 @@
 import SwiftUI
 
 struct TwoLinerView: View {
+    
+    let setup: String
+    let delivery: String
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack(spacing: 12) {
+            Text(setup)
+                .font(.headline)
+            Text(delivery)
+                .font(.headline)
+        }
     }
 }
 
 #Preview {
-    TwoLinerView()
+    TwoLinerView(setup: "Why couldn't the skeleton go to the Christmas party?", delivery: "Because he had no body to go with!")
 }
