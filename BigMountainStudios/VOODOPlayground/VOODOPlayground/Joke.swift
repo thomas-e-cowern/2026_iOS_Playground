@@ -12,7 +12,9 @@ struct Joke: Codable, Identifiable {
     let error: Bool
     let category: String
     let type: String
-//    let joke: String
+    let joke: String?
+    let setup: String?
+    let delivery: String?
     let flags: Flags
     let safe: Bool
     let id: Int
