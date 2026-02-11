@@ -16,7 +16,7 @@ class JokeOO {
         self.singleJoke = singleJoke
     }
     
-    func fetchJoke() async {
+    func fetchOneJoke() async {
         guard let url = URL(string: "https://v2.jokeapi.dev/joke/Any") else {
             print("Invalid URL")
             return

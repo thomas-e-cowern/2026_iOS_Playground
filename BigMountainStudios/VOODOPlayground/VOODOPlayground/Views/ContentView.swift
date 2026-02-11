@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var oo = JokeOO()
+    @State private var oo = MockJokeOO()
     
     var body: some View {
         VStack {
@@ -21,7 +21,7 @@ struct ContentView: View {
         }
         .padding()
         .task {
-            await oo.fetchJoke()
+            await oo.fetchOneJoke()
         }
     }
 }
