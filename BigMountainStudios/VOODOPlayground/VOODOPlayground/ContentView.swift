@@ -13,12 +13,13 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            if let joke = oo.singleJoke {
-                Text(joke.category)
+            if oo.singleJoke?.type == "twopart" {
+                TwoLinerView(setup: oo.singleJoke?.setup ?? "No setup...", delivery: oo.singleJoke?.delivery ?? "No delivery")
             } else {
-                Text("Loading joke…")
+                OneLinerView(joke: oo.singleJoke?.joke ?? "No one liners here...")
             }
         }
+        .padding()
         .task {
             await oo.fetchJoke()
         }
