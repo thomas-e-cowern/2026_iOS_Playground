@@ -24,6 +24,17 @@ struct BookView: View {
                         }
                     }
                 }
+            } header: {
+                HStack {
+                    Label("Books (\(oo.books.count))", systemImage: "books.vertical.fill")
+                    Spacer()
+                    Button {
+                        oo.books.append(Book(title: "New Book", author: "New Author"))
+                    } label: {
+                        Label("Add", systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
         }
         .headerProminence(.increased)
