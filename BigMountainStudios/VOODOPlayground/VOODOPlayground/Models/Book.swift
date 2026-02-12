@@ -7,7 +7,8 @@
 
 import Foundation
 
-struct Book: Codable {
+struct Book: Codable, Identifiable {
+    var id = UUID()
     let title: String
     let author: String
 }
