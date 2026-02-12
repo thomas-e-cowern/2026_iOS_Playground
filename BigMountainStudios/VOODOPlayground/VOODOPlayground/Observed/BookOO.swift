@@ -7,11 +7,13 @@
 
 import Foundation
 
+@Observable
 class BookOO {
     
     var books: [Book] = []
     
     func fetchBooks() {
+        print("Fetching books...")
         books = [
             Book(title: "Casino Royale", author: "Ian Fleming"),
             Book(title: "The Men Who Stare at Goats", author: "Jon Ronson"),
