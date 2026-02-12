@@ -9,20 +9,14 @@ import SwiftUI
 
 struct BookView: View {
     
+    // MARK: Variables
     @State var oo = BookOO()
     
     var body: some View {
         List {
             Section {
                 ForEach(oo.books) { book in
-                    GroupBox {
-                        VStack {
-                            Image(systemName: "book.pages")
-                            Text(book.title)
-                                .font(.title)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
+                    bookRowView(book)
                 }
             } header: {
                 sectionHeaderView
@@ -35,6 +29,7 @@ struct BookView: View {
         }
     }
     
+    // MARK: Computer Variables and Functions
     // MARK: Section Header View
     var sectionHeaderView: some View {
         HStack {
@@ -46,6 +41,18 @@ struct BookView: View {
                 Label("Add", systemImage: "plus")
             }
             .buttonStyle(.bordered)
+        }
+    }
+    
+    // MARK: Book Row View
+    func bookRowView(_ book: Book) -> some View {
+        GroupBox {
+            VStack {
+                Image(systemName: "book.pages")
+                Text(book.title)
+                    .font(.title)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }
