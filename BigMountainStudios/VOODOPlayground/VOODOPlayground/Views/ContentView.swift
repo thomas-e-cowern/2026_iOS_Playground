@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var oo = MockJokeOO()
+    @State private var oo = JokeOO()
     
     var body: some View {
         VStack {
