@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct Expense: Codable {
-    let id = UUID()
+struct Expense: Codable, Identifiable {
+    var id = UUID()
     let employeeName: String
     let type: String
     let amount: Double
