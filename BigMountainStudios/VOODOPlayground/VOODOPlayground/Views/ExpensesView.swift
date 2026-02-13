@@ -8,8 +8,42 @@
 import SwiftUI
 
 struct ExpensesView: View {
+    
+    @State var oo = ExpensesOO()
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ScrollView {
+            VStack {
+                GroupBox {
+                    Text("Employee Profile")
+                        .font(.title.bold().width(.compressed))
+                    Divider()
+                    HStack {
+                        Image(systemName: "person.circle")
+                            .font(.largeTitle)
+                        VStack(alignment: .leading) {
+                            Text("Barbara Smith")
+                                .font(.title2.weight(.medium))
+                            Text("IT Deparment")
+                        }
+                        
+                        Spacer()
+                    }
+                }
+                
+                GroupBox {
+                    Text("Expenses")
+                        .font(.title.bold().width(.compressed))
+                    Divider()
+                    ForEach(oo.expenses) { expense in
+                        LabeledContent(expense.type, value: expense.amount, format: .currency(code: "USD"))
+                    }
+                }
+            }
+            .onAppear {
+                oo.getExpenses()
+            }
+        }
     }
 }
 
