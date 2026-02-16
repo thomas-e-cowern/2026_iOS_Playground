@@ -8,8 +8,20 @@
 import SwiftUI
 
 struct PropertyWrapperView: View {
+    
+    @State private var newPin: String = ""
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Text("Old Pin: 1234")
+        Text("New Pin: 567890")
+        
+        Button("Update Pin") {
+            @FourCharacters var newPin: String
+            newPin = "567890"
+            self.newPin = newPin
+        }
+        
+        Text("Updated Pin: \(newPin)")
     }
 }
 
