@@ -9,19 +9,33 @@ import SwiftUI
 
 struct PropertyWrapperView: View {
     
-    @State private var newPin: String = ""
+    @State private var newPinSeries: String = ""
+    @State private var modifiedPin: String = ""
     
     var body: some View {
-        Text("Old Pin: 1234")
-        Text("New Pin: 567890")
         
-        Button("Update Pin") {
-            @FourCharacters var newPin: String
-            newPin = "567890"
-            self.newPin = newPin
+        VStack {
+            
+            TextField("Enter new pin series", text: $newPinSeries)
+                .border(Color.gray)
+                .textFieldStyle(.roundedBorder)
+            
+            Text(newPinSeries == "" ? "Enter a new pin series" : "New Pin Series: \(newPinSeries)")
+            
+            Spacer()
+                .frame(height: 50)
+            
+            Button("Transform Pin") {
+                @FourCharacters var newPin: String
+                newPin = $newPinSeries.wrappedValue
+                modifiedPin = newPin
+            }
+            .buttonStyle(.borderedProminent)
         }
+        .padding()
         
-        Text("Updated Pin: \(newPin)")
+        
+        Text("Updated Pin: \(modifiedPin)")
     }
 }
 
