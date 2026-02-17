@@ -33,7 +33,7 @@ struct StateToggleView: View {
 //
                 }
             }
-            .frame(width: 150, height: 60)
+            .frame(width: 120, height: 60)
             .background {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isOn ? .green : .red)
