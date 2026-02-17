@@ -12,7 +12,9 @@ struct StateToggleView: View {
     @State private var isOn: Bool = false
     
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
+            
+            
             
             Spacer()
             
@@ -20,7 +22,7 @@ struct StateToggleView: View {
                 isOn.toggle()
             } label: {
                 ZStack(alignment: isOn ? .trailing : .leading) {
-                    HStack {
+                    HStack(spacing: 30) {
                         Text("On").opacity(isOn ? 1 : 0)
                         Text("Off").opacity(isOn ? 0 : 1)
                     }
@@ -31,16 +33,17 @@ struct StateToggleView: View {
 //
                 }
             }
-            .padding(8)
+            .frame(width: 150, height: 60)
             .background {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isOn ? .green : .red)
-                    .frame(width: 100, height: 60)
             }
             
             
             Spacer()
         }
+        .font(.title)
+        .animation(.default, value: isOn)
 
     }
 }
