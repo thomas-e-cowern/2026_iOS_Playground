@@ -13,9 +13,9 @@ struct BindlingListView: View {
     
     var body: some View {
         NavigationStack {
-            List(ingredients, id: \.self) { ingredient in
+            List($ingredients, id: \.self) { $ingredient in
                 NavigationLink(ingredient) {
-                    Text("")
+                    EditIngredientsSubview(ingredient: $ingredient)
                 }
             }
         }
@@ -24,4 +24,18 @@ struct BindlingListView: View {
 
 #Preview {
     BindlingListView()
+}
+
+struct EditIngredientsSubview: View {
+    
+    @Binding var ingredient: String
+    
+    var body: some View {
+        GroupBox {
+            TextField("Ingredient", text: $ingredient)
+        } label: {
+            Text("Subview")
+        }
+
+    }
 }
