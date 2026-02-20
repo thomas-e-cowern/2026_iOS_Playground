@@ -14,8 +14,20 @@ struct ContentView: View {
                 .imageScale(.large)
                 .foregroundStyle(.tint)
             Text("Hello, world!")
+            
+            LoadingButton {
+                try? await Task.sleep(nanoseconds: 1000 * 1_000_000)
+            } label: {
+                Label("Update", systemImage: "person")
+            }
+
         }
         .padding()
+    }
+    
+    func beSlow() async {
+        try? await Task.sleep(nanoseconds: 100 * 1_000_000)
+        print("Loading button pressed")
     }
 }
 
