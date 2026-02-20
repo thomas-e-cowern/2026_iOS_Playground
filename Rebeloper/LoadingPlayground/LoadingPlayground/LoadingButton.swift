@@ -24,6 +24,7 @@ struct LoadingButton<Label: View>: View {
             guard !isLoading else { return }
             
             isLoading = true
+            print(isLoading)
             
             Task {
                 await action()
@@ -33,9 +34,14 @@ struct LoadingButton<Label: View>: View {
             ZStack {
                 label()
                     .opacity(isLoading ? 0 : 1)
+                    .padding(14)
+                    .background(.blue)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 
                 if isLoading {
                     ProgressView()
+                        .tint(.white)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -44,3 +50,4 @@ struct LoadingButton<Label: View>: View {
         .disabled(isLoading)
     }
 }
+
