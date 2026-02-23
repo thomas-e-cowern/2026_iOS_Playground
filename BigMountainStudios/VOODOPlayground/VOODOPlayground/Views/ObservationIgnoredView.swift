@@ -13,20 +13,33 @@ struct ObservationIgnoredView: View {
     
     var body: some View {
         
-        List {
-            Section {
-                ForEach(list.list, id: \.self) { book in
-                    Text(book)
+        VStack {
+            List {
+                Section {
+                    ForEach(list.list, id: \.self) { book in
+                        Text(book)
+                    }
+                } header: {
+                    Text("Book List")
+                        .font(.title.bold())
+                        .foregroundStyle(.black)
+                } footer: {
+                    Text("\(list.footer)")
+                        .font(.headline)
                 }
-            } header: {
-                Text("Book List")
-                    .font(.title.bold())
-                    .foregroundStyle(.black)
-            } footer: {
-                Text("\(list.footer)")
-                    .font(.headline)
+                
+                Section {
+                    Button("Add Book") {
+                        list.makeUpdates()
+                    }
+                    .font(.title)
+                    
+                    Button("Just Footer Update") {
+                        list.justFoooterUpdate()
+                    }
+                    .font(.title)
+                }
             }
-
         }
     }
 }
