@@ -22,6 +22,15 @@ struct WeatherView: View {
                         .font(.title)
                 }
             }
+            
+            Button {
+                oo.updateSunday()
+                oo.updateFriday()
+            } label: {
+                Text("Update")
+                    .font(Font.title.bold())
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 }

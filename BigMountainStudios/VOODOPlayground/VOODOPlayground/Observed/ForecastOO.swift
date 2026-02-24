@@ -35,7 +35,7 @@ class ForecastOO {
     }
     
     func updateFriday() {
-        sevenDays[0].day = "Friday (updated)"
-        sevenDays[0].icon = "sun"
+        sevenDays[5].day = "Friday (updated)"
+        sevenDays[5].icon = "sun.max.fill"
     }
 }
