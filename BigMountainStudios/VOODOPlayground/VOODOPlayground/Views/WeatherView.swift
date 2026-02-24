@@ -14,13 +14,7 @@ struct WeatherView: View {
     var body: some View {
         VStack {
             List(oo.sevenDays) { day in
-                HStack(spacing: 24) {
-                    Image(systemName: day.icon)
-                        .font(.largeTitle)
-                        .foregroundStyle(.blue)
-                    Text(day.day)
-                        .font(.title)
-                }
+                WeatherSubview(day: day.day, icon: day.icon)
             }
             
             Button {
