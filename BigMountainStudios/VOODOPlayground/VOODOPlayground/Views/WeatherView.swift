@@ -9,23 +9,34 @@ import SwiftUI
 
 struct WeatherView: View {
     
-    @State var oo = ForecastOO()
+    @State private var oo = ForecastOO()
     
     var body: some View {
-        VStack {
-            List(oo.sevenDays) { day in
-                WeatherSubview(day: day.day, icon: day.icon)
+        NavigationStack {
+            VStack {
+                EditableWeatherSubview(forecast: oo)
+                
+                Divider()
+                
+                Text(oo.sevenDays.map { $0.day }, format: .list(type: .and, width: .narrow))
             }
-            
-            Button {
-                oo.updateSunday()
-                oo.updateFriday()
-            } label: {
-                Text("Update")
-                    .font(Font.title.bold())
-            }
-            .buttonStyle(.borderedProminent)
+            .font(.title)
+            .navigationTitle("Weather")
         }
+//        VStack {
+//            List(oo.sevenDays) { day in
+//                WeatherSubview(day: day.day, icon: day.icon)
+//            }
+//            
+//            Button {
+//                oo.updateSunday()
+//                oo.updateFriday()
+//            } label: {
+//                Text("Update")
+//                    .font(Font.title.bold())
+//            }
+//            .buttonStyle(.borderedProminent)
+//        }
     }
 }
 
