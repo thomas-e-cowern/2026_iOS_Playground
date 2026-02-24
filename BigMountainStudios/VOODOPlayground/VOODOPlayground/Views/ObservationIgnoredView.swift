@@ -26,6 +26,7 @@ struct ObservationIgnoredView: View {
                 } footer: {
                     Text("\(list.footer)")
                         .font(.headline)
+                        .background(list.validationColor)
                 }
                 
                 Section {
@@ -52,8 +53,20 @@ struct ObservationIgnoredView: View {
 class BookList {
     var list = ["Book 1", "Book 2", "Book 3"]
     var listName = "Book List"
+    var validationColor = Color.clear
     
     @ObservationIgnored var footer = "3 Books"
+    
+    {
+        didSet {
+            switch list.count {
+            case 4...7:
+                validationColor = .green
+            default:
+                validationColor = .clear
+            }
+        }
+    }
     
     func makeUpdates() {
         list.append("Book \(list.count + 1)")
