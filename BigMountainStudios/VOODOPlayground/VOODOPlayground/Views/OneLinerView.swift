@@ -9,11 +9,21 @@ import SwiftUI
 
 struct OneLinerView: View {
     
+    @AppStorage("darkBackground") var darkBackground: Bool = false
+    
     let joke: String
     
     var body: some View {
-        Text(joke)
-            .font(.headline)
+        VStack(spacing: 20) {
+            Text(joke)
+                .font(.headline)
+            
+            Toggle(isOn: $darkBackground) {
+                Text("Use Dark Background")
+            }
+        }
+        .padding()
+        .background(darkBackground ? Color.black.opacity(0.1) : Color.clear)
     }
 }
 
