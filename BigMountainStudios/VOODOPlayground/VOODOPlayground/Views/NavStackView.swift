@@ -10,8 +10,8 @@ import SwiftUI
 struct NavStackView: View {
     var body: some View {
         NavigationStack {
-            NavigationLink("View Developer") {
-                DeveloperView()
+            NavigationLink("Go to Intro View") {
+                DevloperIntroView()
             }
             .navigationTitle("Developer")
         }
@@ -38,5 +38,13 @@ struct DeveloperView: View {
     var body: some View {
         Text("Hello, \(dev.name)!")
             .navigationTitle("Developer View")
+    }
+}
+
+struct DevloperIntroView: View {
+    var body: some View {
+        NavigationLink("Go to Developer View") {
+            DeveloperView()
+        }
     }
 }
