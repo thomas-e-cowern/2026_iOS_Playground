@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+@Observable
+class AddressOO {
+    var address = Address(state: "Vermont")
+}
