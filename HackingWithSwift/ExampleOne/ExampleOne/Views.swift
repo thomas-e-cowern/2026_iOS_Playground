@@ -1,13 +1,51 @@
 import SwiftUI
 
 struct ProjectsView: View {
-    @EnvironmentObject var store: AppStore
+    @Environment(ProjectStore.self) private var store
+    @State private var searchText: String = ""
+    @State private var sortOption: SortOption = .byName
+    @State private var showArchived: Bool = false
+    @State private var editingProject: Project? = nil
     @State private var showingNewProject = false
+
+    enum SortOption: String, CaseIterable, Identifiable {
+        case byName = "Name"
+        case byOpenTasks = "Open Tasks"
+        case byDueDate = "Due Date"
+        var id: String { rawValue }
+    }
+
+    private var filteredProjects: [Project] {
+        let base = showArchived ? store.projects : store.projects.filter { !$0.isArchived }
+        let searched = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? base : base.filter { project in
+            project.name.localizedCaseInsensitiveContains(searchText) || project.notes.localizedCaseInsensitiveContains(searchText)
+        }
+        switch sortOption {
+        case .byName:
+            return searched.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .byOpenTasks:
+            return searched.sorted { lhs, rhs in
+                let l = lhs.tasks.filter { !$0.isCompleted }.count
+                let r = rhs.tasks.filter { !$0.isCompleted }.count
+                if l == r { return lhs.name < rhs.name }
+                return l > r
+            }
+        case .byDueDate:
+            return searched.sorted { (lhs, rhs) in
+                switch (lhs.dueDate, rhs.dueDate) {
+                case let (l?, r?): return l < r
+                case (_?, nil): return true
+                case (nil, _?): return false
+                default: return lhs.name < rhs.name
+                }
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(store.projects) { project in
+                ForEach(filteredProjects) { project in
                     NavigationLink(value: project) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(project.name).font(.headline)
@@ -17,12 +55,49 @@ struct ProjectsView: View {
                                 Text("·")
                                 Text("\(project.tasks.filter{ $0.isCompleted }.count) done")
                             }.font(.caption).foregroundStyle(.secondary)
+                            if project.isArchived { Text("Archived").font(.caption2).padding(4).background(.quaternary).clipShape(RoundedRectangle(cornerRadius: 6)) }
                         }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            // Implement deletion in AppStore
+                            store.deleteProject(project)
+                        } label: { Label("Delete", systemImage: "trash") }
+
+                        Button {
+                            // Toggle archive state in AppStore
+                            store.archiveProject(project, archived: !project.isArchived)
+                        } label: { Label(project.isArchived ? "Unarchive" : "Archive", systemImage: project.isArchived ? "tray.and.arrow.up" : "archivebox") }
+                        .tint(.orange)
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            editingProject = project
+                        } label: { Label("Edit", systemImage: "pencil") }
+                        .tint(.blue)
                     }
                 }
             }
             .navigationTitle("Projects")
+            .searchable(text: $searchText)
             .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Menu {
+                        Picker("Sort", selection: $sortOption) {
+                            ForEach(SortOption.allCases) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        Label("Sort", systemImage: "arrow.up.arrow.down")
+                    }
+                }
+                ToolbarItem(placement: .navigation) {
+                    Toggle(isOn: $showArchived) {
+                        Label("Show Archived", systemImage: "archivebox")
+                    }
+                    .toggleStyle(.switch)
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showingNewProject = true
@@ -34,14 +109,16 @@ struct ProjectsView: View {
             }
             .sheet(isPresented: $showingNewProject) {
                 NewProjectSheet()
-                    .environmentObject(store)
+            }
+            .sheet(item: $editingProject) { proj in
+                EditProjectSheet(project: proj)
             }
         }
     }
 }
 
 struct ProjectDetailView: View {
-    @EnvironmentObject var store: AppStore
+    @Environment(ProjectStore.self) private var store
     let project: Project
     @State private var newTaskTitle: String = ""
     @State private var dueDate: Date? = nil
@@ -55,7 +132,7 @@ struct ProjectDetailView: View {
                     .datePickerStyle(.compact)
                 Button("Add") {
                     guard !newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                    store.addTask(to: project.id, title: newTaskTitle, dueDate: dueDate)
+                    store.addTask(to: project, title: newTaskTitle, dueDate: dueDate)
                     newTaskTitle = ""
                     dueDate = nil
                 }
@@ -63,10 +140,10 @@ struct ProjectDetailView: View {
             }
 
             Section("Tasks") {
-                ForEach(store.projects.first(where: { $0.id == project.id })?.tasks ?? []) { task in
+                ForEach(project.tasks) { task in
                     HStack {
                         Button {
-                            store.toggleTask(task.id, in: project.id)
+                            store.toggleTask(task)
                         } label: {
                             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(task.isCompleted ? .green : .secondary)
@@ -77,6 +154,28 @@ struct ProjectDetailView: View {
                             if let d = task.dueDate { Text(d.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary) }
                         }
                         Spacer()
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            store.deleteTask(task)
+                        } label: { Label("Delete", systemImage: "trash") }
+                        Button {
+                            store.archiveTask(task, archived: !task.isArchived)
+                        } label: { Label(task.isArchived ? "Unarchive" : "Archive", systemImage: task.isArchived ? "tray.and.arrow.up" : "archivebox") }
+                        .tint(.orange)
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            store.toggleTask(task)
+                        } label: { Label(task.isCompleted ? "Mark Open" : "Complete", systemImage: task.isCompleted ? "circle" : "checkmark.circle.fill") }
+                        .tint(.green)
+                        Button {
+                            // Present a simple inline edit alert for task title
+                            // Using a temporary approach: duplicate as new edited title via prompt
+                            // This will be refined in a dedicated edit sheet if needed
+                            // No-op placeholder if not supported
+                        } label: { Label("Edit", systemImage: "pencil") }
+                        .tint(.blue)
                     }
                 }
             }
@@ -91,13 +190,12 @@ struct ProjectDetailView: View {
         }
         .sheet(isPresented: $showingAIBreakdown) {
             AIBreakdownSheet(project: project)
-                .environmentObject(store)
         }
     }
 }
 
 struct NewProjectSheet: View {
-    @EnvironmentObject var store: AppStore
+    @Environment(ProjectStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var name: String = ""
     @State private var notes: String = ""
@@ -133,7 +231,7 @@ struct NewProjectSheet: View {
 }
 
 struct AIBreakdownSheet: View {
-    @EnvironmentObject var store: AppStore
+    @Environment(ProjectStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let project: Project
     @State private var suggestions: [String] = []
@@ -151,7 +249,7 @@ struct AIBreakdownSheet: View {
                             HStack {
                                 Text(s)
                                 Spacer()
-                                Button { store.addTask(to: project.id, title: s) } label: {
+                                Button { store.addTask(to: project, title: s) } label: {
                                     Image(systemName: "plus.circle.fill").foregroundStyle(.tint)
                                 }
                                 .buttonStyle(.plain)
@@ -166,13 +264,12 @@ struct AIBreakdownSheet: View {
     }
 
     private func load() {
-        let p = store.projects.first(where: { $0.id == project.id }) ?? project
-        suggestions = ai.breakdown(projectName: p.name, notes: p.notes)
+        suggestions = ai.breakdown(projectName: project.name, notes: project.notes)
     }
 }
 
 struct CalendarView: View {
-    @EnvironmentObject var store: AppStore
+    @Environment(ProjectStore.self) private var store
     @State private var selectedDate: Date = Date()
 
     var body: some View {
@@ -185,9 +282,13 @@ struct CalendarView: View {
                         ForEach(store.tasks(on: selectedDate)) { task in
                             VStack(alignment: .leading) {
                                 Text(task.title)
-                                if let p = store.projects.first(where: { $0.id == task.projectID }) {
+                                if let p = task.project {
                                     Text(p.name).font(.caption).foregroundStyle(.secondary)
                                 }
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) { store.deleteTask(task) } label: { Label("Delete", systemImage: "trash") }
+                                Button { store.toggleTask(task) } label: { Label(task.isCompleted ? "Mark Open" : "Complete", systemImage: task.isCompleted ? "circle" : "checkmark.circle.fill") }.tint(.green)
                             }
                         }
                     }
@@ -200,7 +301,7 @@ struct CalendarView: View {
 }
 
 struct TodayView: View {
-    @EnvironmentObject var store: AppStore
+    @Environment(ProjectStore.self) private var store
 
     var body: some View {
         NavigationStack {
@@ -210,9 +311,13 @@ struct TodayView: View {
                         HStack {
                             Text(task.title)
                             Spacer()
-                            if let p = store.projects.first(where: { $0.id == task.projectID }) {
+                            if let p = task.project {
                                 Text(p.name).font(.caption).foregroundStyle(.secondary)
                             }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) { store.deleteTask(task) } label: { Label("Delete", systemImage: "trash") }
+                            Button { store.toggleTask(task) } label: { Label(task.isCompleted ? "Mark Open" : "Complete", systemImage: task.isCompleted ? "circle" : "checkmark.circle.fill") }.tint(.green)
                         }
                     }
                 }
@@ -221,6 +326,13 @@ struct TodayView: View {
                         VStack(alignment: .leading) {
                             Text(task.title)
                             if let d = task.dueDate { Text(d.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary) }
+                            if let p = task.project {
+                                Text(p.name).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) { store.deleteTask(task) } label: { Label("Delete", systemImage: "trash") }
+                            Button { store.toggleTask(task) } label: { Label(task.isCompleted ? "Mark Open" : "Complete", systemImage: task.isCompleted ? "circle" : "checkmark.circle.fill") }.tint(.green)
                         }
                     }
                 }
@@ -229,3 +341,40 @@ struct TodayView: View {
         }
     }
 }
+struct EditProjectSheet: View {
+    @Environment(ProjectStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var name: String
+    @State private var notes: String
+    let project: Project
+
+    init(project: Project) {
+        self.project = project
+        _name = State(initialValue: project.name)
+        _notes = State(initialValue: project.notes)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Details") {
+                    TextField("Project name", text: $name)
+                    TextField("Notes", text: $notes, axis: .vertical)
+                        .lineLimit(3, reservesSpace: true)
+                }
+            }
+            .navigationTitle("Edit Project")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        store.updateProject(project, name: name, notes: notes)
+                        dismiss()
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+}
+
