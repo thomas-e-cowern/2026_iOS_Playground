@@ -7,6 +7,7 @@ struct ProjectsView: View {
     @State private var showArchived: Bool = false
     @State private var editingProject: Project? = nil
     @State private var showingNewProject = false
+    @State private var aiProject: Project? = nil
 
     enum SortOption: String, CaseIterable, Identifiable {
         case byName = "Name"
@@ -75,6 +76,10 @@ struct ProjectsView: View {
                             editingProject = project
                         } label: { Label("Edit", systemImage: "pencil") }
                         .tint(.blue)
+                        Button {
+                            aiProject = project
+                        } label: { Label("Swiss Cheese", systemImage: "square.stack.3d.up") }
+                        .tint(.indigo)
                     }
                 }
             }
@@ -112,6 +117,9 @@ struct ProjectsView: View {
             }
             .sheet(item: $editingProject) { proj in
                 EditProjectSheet(project: proj)
+            }
+            .sheet(item: $aiProject) { proj in
+                AIBreakdownSheet(project: proj)
             }
         }
     }
