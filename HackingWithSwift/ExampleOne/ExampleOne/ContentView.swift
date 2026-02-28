@@ -1,21 +1,18 @@
-//
-//  ContentView.swift
-//  ExampleOne
-//
-//  Created by Thomas Cowern on 2/28/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @State private var store = ProjectStore()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            ProjectsView()
+                .tabItem { Label("Projects", systemImage: "folder") }
+            TodayView()
+                .tabItem { Label("Today", systemImage: "checkmark.circle") }
+            CalendarView()
+                .tabItem { Label("Calendar", systemImage: "calendar") }
         }
-        .padding()
+        .environment(store)
     }
 }
 
