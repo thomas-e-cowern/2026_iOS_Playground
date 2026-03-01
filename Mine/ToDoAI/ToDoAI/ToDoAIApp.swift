@@ -11,7 +11,7 @@ import SwiftUI
 struct ToDoAIApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(toDos: DevData().sampleProjects)
         }
     }
 }
