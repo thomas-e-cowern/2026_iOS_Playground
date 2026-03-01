@@ -12,21 +12,23 @@ struct ContentView: View {
     @State var toDos: [Project]
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                List(toDos) { project in
-                    NavigationLink {
-                        ProjectDetailView(project: project)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(project.title)
-                                .font(.title)
-                            Text(project.description)
+        VStack(alignment: .leading) {
+            NavigationStack {
+                VStack(alignment: .leading) {
+                    List(toDos) { project in
+                        NavigationLink {
+                            ProjectDetailView(project: project)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(project.title)
+                                    .font(.title)
+                                Text(project.description)
+                            }
                         }
                     }
                 }
+                .navigationTitle("Projects")
             }
-            .navigationTitle("Projects")
         }
     }
 }

@@ -13,12 +13,12 @@ struct ProjectDetailView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text(project.title)
-                .font(.largeTitle)
-                .padding()
-            
-            ForEach(project.tasks) { task in
-                TaskView(task: task)
+            List {
+                Section(header: Text(project.title).font(.title)) {
+                    ForEach(project.tasks) { task in
+                        TaskView(task: task)
+                    }
+                }
             }
         }
     }

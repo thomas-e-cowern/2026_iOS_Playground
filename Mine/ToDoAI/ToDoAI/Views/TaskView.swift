@@ -10,23 +10,22 @@ import SwiftUI
 struct TaskView: View {
     @State var task: Task              // Task model
     // You may replace this `@State` with `@Binding` based on your data flow needs
-
+    
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                HStack {
-                    VStack {
-                        Text(task.title)                     // Display task title
-                            .font(.headline)
-                        if let description = task.description {
-                            Text(description)                // Display optional description
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
+        VStack(alignment: .leading) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading) {
+                    Text(task.title)                     // Display task title
+                        .font(.headline)
+                    if let description = task.description {
+                        Text(description)                // Display optional description
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
                     }
-                    
-                    Spacer()
-                    
+                }
+                
+                VStack(alignment: .trailing) {
                     CheckboxView(isCompleted: $task.isCompleted) // Checkbox for managing task completion
                 }
             }
