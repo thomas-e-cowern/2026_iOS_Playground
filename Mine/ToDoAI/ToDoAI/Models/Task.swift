@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct Task {
+struct Task: Identifiable {
     let id: UUID              // Unique identifier for the task
     var title: String         // Title of the task
     var description: String?   // Optional details about the task
