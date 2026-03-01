@@ -12,13 +12,13 @@ struct ProjectDetailView: View {
     @State var project: Project
     
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             Text(project.title)
                 .font(.largeTitle)
                 .padding()
             
             ForEach(project.tasks) { task in
-                Text(task.title)
+                TaskView(task: task)
             }
         }
     }

@@ -139,4 +139,9 @@ struct DevData {
             archivedDate: nil
         )
     ]
+    
+    let sampleTasks: [Task] = [
+        Task(id: UUID(), title: "Task 1", description: "Description for task 1", dueDate: nil, isCompleted: false, priority: .high, archivedDate: nil),
+        Task(id: UUID(), title: "Task 2", description: "Description for task 2", dueDate: nil, isCompleted: false, priority: .medium, archivedDate: nil)
+        ]
 }
