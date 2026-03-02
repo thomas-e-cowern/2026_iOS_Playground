@@ -10,9 +10,9 @@ import SwiftData
 
 @Model
 class ProjectTask {
-    @Attribute var title: String
-    @Attribute var isCompleted: Bool
-    @Relationship var project: Project?
+    @Attribute() var title: String
+    @Attribute() var isCompleted: Bool
+    @Relationship() var project: Project?
 
     init(title: String, isCompleted: Bool = false) {
         self.title = title

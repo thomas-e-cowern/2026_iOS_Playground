@@ -10,9 +10,9 @@ import SwiftData
 
 @Model
 class Project {
-    @Attribute var name: String
-    @Attribute var projectDescription: String
-    @Relationship var tasks: [ProjectTask]?
+    @Attribute() var name: String
+    @Attribute() var projectDescription: String
+    @Relationship() var tasks: [ProjectTask]?
 
     init(name: String, projectDescription: String) {
         self.name = name

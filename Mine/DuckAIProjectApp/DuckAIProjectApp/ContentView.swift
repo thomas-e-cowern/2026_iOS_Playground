@@ -6,18 +6,45 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(Project.self) private var projects  // Use @Query for SwiftData models
+
+    @State private var projectName: String = ""
+    @State private var projectDescription: String = ""
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationView {
+            List {
+                ForEach(projects) { project in
+                    VStack(alignment: .leading) {
+                        Text(project.name).font(.headline)
+                        Text(project.description).font(.subheadline).foregroundColor(.gray)
+                    }
+                }
+            }
+            .navigationTitle("Projects")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: addProject) {
+                        Label("Add Project", systemImage: "plus")
+                    }
+                }
+            }
         }
-        .padding()
+    }
+
+    private func addProject() {
+        let newProject = Project(name: projectName, description: projectDescription)
+        modelContext.insert(newProject)
+        projectName = ""
+        projectDescription = ""
     }
 }
+
+
 
 #Preview {
     ContentView()
