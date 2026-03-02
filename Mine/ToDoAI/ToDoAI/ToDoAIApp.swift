@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct ToDoAIApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView(toDos: DevData().sampleProjects)
+            ContentView()
+                .modelContainer(for: Project.self)
         }
     }
 }
+

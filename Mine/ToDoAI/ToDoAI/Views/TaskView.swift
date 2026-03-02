@@ -6,9 +6,10 @@
 //
 
 import SwiftUI
+import SwiftData
 
-struct TaskView: View {
-    @State var task: Task              // Task model
+struct ProjectTaskView: View {
+    @State var task: ToDoProjectTask              // ProjectTask model
     // You may replace this `@State` with `@Binding` based on your data flow needs
     
     var body: some View {
@@ -17,8 +18,8 @@ struct TaskView: View {
                 VStack(alignment: .leading) {
                     Text(task.title)                     // Display task title
                         .font(.headline)
-                    if let description = task.description {
-                        Text(description)                // Display optional description
+                    if !task.detail.isEmpty {
+                        Text(task.detail)                // Display optional detail
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.leading)
@@ -26,7 +27,7 @@ struct TaskView: View {
                 }
                 
                 VStack(alignment: .trailing) {
-                    CheckboxView(isCompleted: $task.isCompleted) // Checkbox for managing task completion
+                    CheckboxView(isCompleted: $task.completed) // Checkbox for managing task completion
                 }
             }
         }
@@ -34,5 +35,5 @@ struct TaskView: View {
     }
 }
 #Preview {
-    TaskView(task: DevData().sampleTasks.first!)
+    ProjectTaskView(task: DevData().sampleTasks.first!)
 }

@@ -6,13 +6,31 @@
 //
 
 import SwiftUI
+import SwiftData
 
-struct Project: Identifiable {
-    let id: UUID              // Unique identifier for the project
+
+
+@Model
+final class Project {
     var title: String         // Title of the project
-    var description: String    // Details about the project
+    var details: String       // Details about the project (renamed from description)
     var dueDate: Date?        // Optional due date for the project
-    var tasks: [Task]         // List of tasks associated with the project
-    var isCompleted: Bool      // Status of the project (completed or not)
-    var archivedDate: Date?    // Optional date when the project was archived
+    var tasks: [ToDoProjectTask]         // List of tasks associated with the project
+    var isCompleted: Bool     // Status of the project (completed or not)
+    var archivedDate: Date?   // Optional date when the project was archived
+
+    init(title: String,
+         details: String,
+         dueDate: Date? = nil,
+         tasks: [ToDoProjectTask] = [],
+         isCompleted: Bool = false,
+         archivedDate: Date? = nil) {
+        self.title = title
+        self.details = details
+        self.dueDate = dueDate
+        self.tasks = tasks
+        self.isCompleted = isCompleted
+        self.archivedDate = archivedDate
+    }
 }
+
