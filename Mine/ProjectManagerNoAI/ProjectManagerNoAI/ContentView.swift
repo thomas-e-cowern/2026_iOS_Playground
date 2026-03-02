@@ -6,19 +6,48 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    
+    @Environment(\.modelContext) private var modelContext
+    
+    @Query private var projects: [ProjectModel]
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Button("Add Project") {
+                addProject()
+            }
+            .font(.title)
+            
+            List(projects) { project in
+                Text(project.name)
+            }
+            
+            Button("Clear Projects") {
+                clearProjects()
+            }
+            .font(.title)
         }
-        .padding()
+    }
+    
+    private func addProject() {
+        let project = ProjectModel(name: "Project \(Int.random(in: 0...20))", projectDescription: "This is project one")
+        modelContext.insert(project)
+    }
+    
+    private func clearProjects() {
+        do {
+            try modelContext.delete(model: ProjectModel.self)
+        } catch {
+            print("Failed to delete projects")
+        }
+        
     }
 }
 
 #Preview {
     ContentView()
+        .modelContainer(ProjectModel.preview)
 }
