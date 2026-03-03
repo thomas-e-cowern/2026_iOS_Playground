@@ -43,7 +43,6 @@ struct ContentView: View {
         } catch {
             print("Failed to delete projects")
         }
-        
     }
 }
 
