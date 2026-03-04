@@ -22,7 +22,7 @@ struct ContentView: View {
             .font(.title)
             
             List(projects) { project in
-                Text(project.name)
+                ProjectRowView(project: project)
             }
             
             Button("Clear Projects") {
