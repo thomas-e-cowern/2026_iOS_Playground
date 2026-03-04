@@ -12,7 +12,7 @@ struct ContentView: View {
     
     @Environment(\.modelContext) private var modelContext
     
-    @Query(sort: \ProjectModel.name) private var projects: [ProjectModel]
+    @Query private var projects: [ProjectModel]
     
     @State private var orderAscending = true
     @State private var filteredText = ""
@@ -25,15 +25,17 @@ struct ContentView: View {
                 //            }
                 //            .font(.title)
                 
-                List(filteredProjects) { project in
+                List(sortedAndFilteredProjects) { project in
                     ProjectRowView(project: project)
                 }
                 .searchable(text: $filteredText)
-//                .toolbar {
-//                    Button("", systemImage: "arrow.up.arrow.down.circle") {
-//                        orderAscending.toggle()
-//                    }
-//                }
+                .toolbar {
+                    Button("", systemImage: "arrow.up.arrow.down.circle") {
+                        withAnimation(.bouncy()) {
+                            orderAscending.toggle()
+                        }
+                    }
+                }
                 
                 //            Button("Clear Projects") {
                 //                clearProjects()
@@ -77,6 +79,13 @@ struct ContentView: View {
         
         return projects.filter { project in
             project.name.contains(filteredText)
+        }
+    }
+    
+    private var sortedAndFilteredProjects: [ProjectModel] {
+        let base = filteredProjects
+        return base.sorted { a, b in
+            orderAscending ? a.name < b.name : a.name > b.name
         }
     }
 }
