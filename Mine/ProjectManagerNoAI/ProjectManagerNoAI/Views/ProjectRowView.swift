@@ -22,5 +22,5 @@ struct ProjectRowView: View {
 }
 
 #Preview {
-    ProjectRowView(project: ProjectModel(name: "Project Name", projectDescription: "This is the description"))
+    ProjectRowView(project: ProjectModel.mockProjects.first!)
 }
