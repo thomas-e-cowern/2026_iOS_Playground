@@ -11,6 +11,7 @@ import FoundationModels
 struct ContentView: View {
     
     @State private var output = ""
+    @State private var session = LanguageModelSession()
     
     var body: some View {
         VStack {
@@ -30,7 +31,7 @@ struct ContentView: View {
         output = "generating a new joke"
         Task {
             do {
-                let session = LanguageModelSession()
+//                let session = LanguageModelSession()
                 let response = try await session.respond(to: "Please tell me a joke")
                 
                 output = response.content
@@ -41,6 +42,7 @@ struct ContentView: View {
         }
     }
 }
+
 
 #Preview {
     ContentView()
