@@ -10,16 +10,25 @@ import FoundationModels
 
 struct ContentView: View {
     
-    @State private var output = ""
+    @State private var input: String = ""
+    @State private var output: String = ""
     @State private var session = LanguageModelSession()
     
     var body: some View {
         VStack {
-            Text(output)
+            
+            TextField("Enter a Prompt", text: $input)
+            
+            ScrollView {
+                Text(output)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            
             Button {
-                generateJoke()
+//                generateJoke()
+                generateReponse()
             } label: {
-                Text("Generate a joke")
+                Text("Generate Response")
             }
 
         }
@@ -39,6 +48,17 @@ struct ContentView: View {
                 print("Something went wrong in generateJoke()")
             }
             
+        }
+    }
+    
+    func generateReponse() {
+        Task {
+            do {
+                let response = try await session.respond(to: input)
+                output = response.content
+            } catch {
+                print("there was an error in generateResponse()")
+            }
         }
     }
 }
