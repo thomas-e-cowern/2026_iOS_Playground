@@ -67,8 +67,12 @@ struct ContentView: View {
     func generateReponse() {
         Task {
             do {
-                let response = try await session.respond(to: input)
-                output = response.content
+//                let response = try await session.respond(to: input, options: .init(sampling: .random(probabilityThreshold: 0.5), temperature: 1))
+                let stream = session.streamResponse(to: input)
+                for try await chunk in stream {
+                    output = chunk.content
+                }
+//                output = response.content
             } catch {
                 print("there was an error in generateResponse()")
             }
