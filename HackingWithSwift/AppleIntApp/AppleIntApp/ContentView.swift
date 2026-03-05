@@ -13,11 +13,23 @@ struct ContentView: View {
     @State private var input: String = ""
     @State private var output: String = ""
     @State private var session = LanguageModelSession()
+    @State private var instructions: String = ""
     
     var body: some View {
         VStack {
             
-            TextField("Enter a Prompt", text: $input)
+            TextField("Enter custom instructions", text: $instructions, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+            
+            Button {
+                updateInstructions()
+            } label: {
+                Text("Update")
+            }
+            .buttonStyle(.borderedProminent)
+            
+            TextField("Enter a prompt", text: $input)
+                .textFieldStyle(.roundedBorder)
             
             ScrollView {
                 Text(output)
@@ -28,8 +40,9 @@ struct ContentView: View {
 //                generateJoke()
                 generateReponse()
             } label: {
-                Text("Generate Response")
+                Text("Generate response")
             }
+            .buttonStyle(.borderedProminent)
 
         }
         .padding()
@@ -60,6 +73,10 @@ struct ContentView: View {
                 print("there was an error in generateResponse()")
             }
         }
+    }
+    
+    func updateInstructions() {
+        session = LanguageModelSession(instructions: instructions)
     }
 }
 
