@@ -33,26 +33,29 @@ struct GenerableView: View {
     @State private var directory = Directory(students: [])
     
     var body: some View {
-        VStack {
-            
-            Spacer()
-            
-            if directory.students.count < 1 {
-                Text("There are no students in the directory.")
-            } else {
-                ScrollView {
-                    ForEach(directory.students) { student in
-                        Text("\(student.firstName) \(student.lastName)")
+        NavigationStack {
+            VStack {
+                
+                Spacer()
+                
+                if directory.students.count < 1 {
+                    Text("There are no students in the directory.")
+                } else {
+                    ScrollView {
+                        ForEach(directory.students) { student in
+                            StudentRowView(student: student)
+                        }
                     }
+                    .padding(10)
                 }
-            }
-            
-            Spacer()
-            
-            Button {
-                generateADirectory()
-            } label: {
-                Text("Generate Directory")
+                
+                Spacer()
+                
+                Button {
+                    generateADirectory()
+                } label: {
+                    Text("Generate Directory")
+                }
             }
         }
 
