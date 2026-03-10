@@ -3,11 +3,13 @@ import SwiftUI
 struct ProjectListView: View {
     @Environment(ProjectStore.self) private var store
     @State private var showAddProject = false
+    @State private var projectToEdit: Project?
+    @State private var projectToDelete: Project?
 
     var body: some View {
         NavigationStack {
             Group {
-                if store.projects.isEmpty {
+                if store.activeProjects.isEmpty {
                     ContentUnavailableView {
                         Label("No Projects", systemImage: "folder")
                     } description: {
@@ -15,13 +17,32 @@ struct ProjectListView: View {
                     }
                 } else {
                     List {
-                        ForEach(store.projects) { project in
+                        ForEach(store.activeProjects) { project in
                             NavigationLink(value: project.id) {
                                 ProjectRow(project: project)
                             }
-                        }
-                        .onDelete { offsets in
-                            store.deleteProject(at: offsets)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    projectToDelete = project
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+
+                                Button {
+                                    store.archiveProject(project.id)
+                                } label: {
+                                    Label("Archive", systemImage: "archivebox")
+                                }
+                                .tint(.orange)
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    projectToEdit = project
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     }
                     .listStyle(.insetGrouped)
@@ -44,6 +65,25 @@ struct ProjectListView: View {
             }
             .sheet(isPresented: $showAddProject) {
                 AddProjectView()
+            }
+            .sheet(item: $projectToEdit) { project in
+                EditProjectView(project: project)
+            }
+            .alert("Delete Project", isPresented: Binding(
+                get: { projectToDelete != nil },
+                set: { if !$0 { projectToDelete = nil } }
+            )) {
+                Button("Cancel", role: .cancel) {
+                    projectToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let project = projectToDelete {
+                        store.deleteProject(project.id)
+                    }
+                    projectToDelete = nil
+                }
+            } message: {
+                Text("Are you sure you want to permanently delete this project and all its tasks?")
             }
         }
     }

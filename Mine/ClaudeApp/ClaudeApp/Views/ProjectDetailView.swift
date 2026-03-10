@@ -4,6 +4,9 @@ struct ProjectDetailView: View {
     @Environment(ProjectStore.self) private var store
     let project: Project
     @State private var showAddTask = false
+    @State private var showEditProject = false
+    @State private var taskToEdit: ProjectTask?
+    @State private var taskToDelete: ProjectTask?
 
     private var currentProject: Project {
         store.projects.first(where: { $0.id == project.id }) ?? project
@@ -19,15 +22,53 @@ struct ProjectDetailView: View {
         .navigationTitle(currentProject.name)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showAddTask = true
+                Menu {
+                    Button {
+                        showAddTask = true
+                    } label: {
+                        Label("Add Task", systemImage: "plus")
+                    }
+
+                    Button {
+                        showEditProject = true
+                    } label: {
+                        Label("Edit Project", systemImage: "pencil")
+                    }
+
+                    Button {
+                        store.archiveProject(project.id)
+                    } label: {
+                        Label("Archive Project", systemImage: "archivebox")
+                    }
                 } label: {
-                    Image(systemName: "plus")
+                    Image(systemName: "ellipsis.circle")
                 }
             }
         }
         .sheet(isPresented: $showAddTask) {
             AddTaskView(projectID: project.id)
+        }
+        .sheet(isPresented: $showEditProject) {
+            EditProjectView(project: currentProject)
+        }
+        .sheet(item: $taskToEdit) { task in
+            EditTaskView(task: task, projectID: project.id)
+        }
+        .alert("Delete Task", isPresented: Binding(
+            get: { taskToDelete != nil },
+            set: { if !$0 { taskToDelete = nil } }
+        )) {
+            Button("Cancel", role: .cancel) {
+                taskToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let task = taskToDelete {
+                    store.deleteTask(task.id, from: project.id)
+                }
+                taskToDelete = nil
+            }
+        } message: {
+            Text("Are you sure you want to permanently delete this task?")
         }
     }
 
@@ -57,7 +98,7 @@ struct ProjectDetailView: View {
         Section("Progress") {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("\(completedCount) of \(currentProject.tasks.count) tasks completed")
+                    Text("\(completedCount) of \(currentProject.activeTasks.count) tasks completed")
                         .font(.subheadline)
                     Spacer()
                     Text("\(Int(currentProject.completionPercentage * 100))%")
@@ -94,21 +135,37 @@ struct ProjectDetailView: View {
 
     private var tasksSection: some View {
         Section("Tasks") {
-            if currentProject.tasks.isEmpty {
+            if currentProject.activeTasks.isEmpty {
                 ContentUnavailableView {
                     Label("No Tasks", systemImage: "checklist")
                 } description: {
-                    Text("Tap + to break this project into tasks.")
+                    Text("Tap the menu to add tasks to this project.")
                 }
             } else {
                 ForEach(sortedTasks) { task in
                     TaskRow(task: task, projectID: project.id)
-                }
-                .onDelete { offsets in
-                    let taskIDs = offsets.map { sortedTasks[$0].id }
-                    for id in taskIDs {
-                        store.deleteTask(id, from: project.id)
-                    }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                taskToDelete = task
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+
+                            Button {
+                                store.archiveTask(task.id, in: project.id)
+                            } label: {
+                                Label("Archive", systemImage: "archivebox")
+                            }
+                            .tint(.orange)
+                        }
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                taskToEdit = task
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(.blue)
+                        }
                 }
             }
         }
@@ -117,7 +174,7 @@ struct ProjectDetailView: View {
     // MARK: - Computed Properties
 
     private var sortedTasks: [ProjectTask] {
-        currentProject.tasks.sorted { a, b in
+        currentProject.activeTasks.sorted { a, b in
             if a.status == .completed && b.status != .completed { return false }
             if a.status != .completed && b.status == .completed { return true }
             if a.priority != b.priority { return a.priority < b.priority }
@@ -126,15 +183,15 @@ struct ProjectDetailView: View {
     }
 
     private var completedCount: Int {
-        currentProject.tasks.filter { $0.status == .completed }.count
+        currentProject.activeTasks.filter { $0.status == .completed }.count
     }
 
     private var inProgressCount: Int {
-        currentProject.tasks.filter { $0.status == .inProgress }.count
+        currentProject.activeTasks.filter { $0.status == .inProgress }.count
     }
 
     private var notStartedCount: Int {
-        currentProject.tasks.filter { $0.status == .notStarted }.count
+        currentProject.activeTasks.filter { $0.status == .notStarted }.count
     }
 
     private func color(for name: String) -> Color {
