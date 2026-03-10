@@ -18,6 +18,11 @@ struct CalendarView: View {
                 taskListForSelectedDate
             }
             .navigationTitle("Calendar")
+            .navigationDestination(for: UUID.self) { projectID in
+                if let project = store.projects.first(where: { $0.id == projectID }) {
+                    ProjectDetailView(project: project)
+                }
+            }
         }
     }
 
@@ -145,7 +150,9 @@ struct CalendarView: View {
                 } else {
                     List {
                         ForEach(tasksForDay, id: \.task.id) { item in
-                            CalendarTaskRow(project: item.project, task: item.task)
+                            NavigationLink(value: item.project.id) {
+                                CalendarTaskRow(project: item.project, task: item.task)
+                            }
                         }
                     }
                     .listStyle(.plain)
