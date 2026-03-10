@@ -1,0 +1,288 @@
+import SwiftUI
+
+struct CalendarView: View {
+    @Environment(ProjectStore.self) private var store
+    @State private var displayedMonth = Date.now
+    @State private var selectedDate: Date? = nil
+
+    private let calendar = Calendar.current
+    private let daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                monthHeader
+                dayOfWeekHeader
+                calendarGrid
+                Divider()
+                taskListForSelectedDate
+            }
+            .navigationTitle("Calendar")
+        }
+    }
+
+    // MARK: - Month Header
+
+    private var monthHeader: some View {
+        HStack {
+            Button {
+                changeMonth(by: -1)
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.title3)
+            }
+
+            Spacer()
+
+            Text(monthYearString)
+                .font(.title2.bold())
+
+            Spacer()
+
+            Button {
+                changeMonth(by: 1)
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.title3)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Day of Week Header
+
+    private var dayOfWeekHeader: some View {
+        HStack(spacing: 0) {
+            ForEach(daysOfWeek, id: \.self) { day in
+                Text(day)
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 4)
+        .padding(.bottom, 4)
+    }
+
+    // MARK: - Calendar Grid
+
+    private var calendarGrid: some View {
+        let days = daysInMonth()
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+
+        return LazyVGrid(columns: columns, spacing: 4) {
+            ForEach(days, id: \.self) { date in
+                if let date {
+                    dayCell(for: date)
+                } else {
+                    Color.clear
+                        .frame(height: 44)
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func dayCell(for date: Date) -> some View {
+        let isToday = calendar.isDateInToday(date)
+        let isSelected = selectedDate.map { calendar.isDate($0, inSameDayAs: date) } ?? false
+        let tasksForDay = store.tasks(for: date)
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedDate = date
+            }
+        } label: {
+            VStack(spacing: 2) {
+                Text("\(calendar.component(.day, from: date))")
+                    .font(.callout)
+                    .fontWeight(isToday ? .bold : .regular)
+                    .foregroundStyle(isSelected ? .white : isToday ? .blue : .primary)
+
+                if !tasksForDay.isEmpty {
+                    HStack(spacing: 2) {
+                        ForEach(tasksForDay.prefix(3), id: \.task.id) { item in
+                            Circle()
+                                .fill(Color(projectColor(item.project.colorName)))
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+                } else {
+                    Spacer()
+                        .frame(height: 5)
+                }
+            }
+            .frame(height: 44)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.blue : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Task List for Selected Date
+
+    @ViewBuilder
+    private var taskListForSelectedDate: some View {
+        if let selectedDate {
+            let tasksForDay = store.tasks(for: selectedDate)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(selectedDateString)
+                    .font(.headline)
+                    .padding(.horizontal)
+                    .padding(.top, 12)
+
+                if tasksForDay.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Tasks", systemImage: "checkmark.circle")
+                    } description: {
+                        Text("No tasks scheduled for this day.")
+                    }
+                } else {
+                    List {
+                        ForEach(tasksForDay, id: \.task.id) { item in
+                            CalendarTaskRow(project: item.project, task: item.task)
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+            }
+        } else {
+            ContentUnavailableView {
+                Label("Select a Day", systemImage: "calendar")
+            } description: {
+                Text("Tap a date to see scheduled tasks.")
+            }
+            .frame(maxHeight: .infinity)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: displayedMonth)
+    }
+
+    private var selectedDateString: String {
+        guard let selectedDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        return formatter.string(from: selectedDate)
+    }
+
+    private func changeMonth(by value: Int) {
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: displayedMonth) {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                displayedMonth = newMonth
+                selectedDate = nil
+            }
+        }
+    }
+
+    private func daysInMonth() -> [Date?] {
+        guard let range = calendar.range(of: .day, in: .month, for: displayedMonth),
+              let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: displayedMonth))
+        else { return [] }
+
+        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
+        let leadingBlanks = firstWeekday - 1
+
+        var days: [Date?] = Array(repeating: nil, count: leadingBlanks)
+
+        for day in range {
+            if let date = calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth) {
+                days.append(date)
+            }
+        }
+
+        return days
+    }
+
+    private func projectColor(_ name: String) -> Color {
+        switch name {
+        case "blue": return .blue
+        case "purple": return .purple
+        case "orange": return .orange
+        case "red": return .red
+        case "green": return .green
+        case "pink": return .pink
+        default: return .blue
+        }
+    }
+}
+
+struct CalendarTaskRow: View {
+    let project: Project
+    let task: ProjectTask
+
+    var body: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(color(for: project.colorName))
+                .frame(width: 4, height: 40)
+
+            Image(systemName: task.status.icon)
+                .foregroundStyle(statusColor)
+                .font(.title3)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(task.title)
+                    .font(.subheadline.weight(.medium))
+                    .strikethrough(task.status == .completed, color: .secondary)
+
+                Text(project.name)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Text(task.priority.rawValue)
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(priorityColor.opacity(0.15))
+                .foregroundStyle(priorityColor)
+                .clipShape(Capsule())
+        }
+    }
+
+    private var statusColor: Color {
+        switch task.status {
+        case .notStarted: return .gray
+        case .inProgress: return .blue
+        case .completed: return .green
+        }
+    }
+
+    private var priorityColor: Color {
+        switch task.priority {
+        case .low: return .green
+        case .medium: return .orange
+        case .high: return .red
+        }
+    }
+
+    private func color(for name: String) -> Color {
+        switch name {
+        case "blue": return .blue
+        case "purple": return .purple
+        case "orange": return .orange
+        case "red": return .red
+        case "green": return .green
+        case "pink": return .pink
+        default: return .blue
+        }
+    }
+}
+
+#Preview {
+    CalendarView()
+        .environment(ProjectStore())
+}
