@@ -4,24 +4,35 @@ import SwiftUI
 @Observable
 class ProjectStore {
     var projects: [Project] = []
+    var notificationManager: NotificationManager?
 
     init() {
         loadSampleData()
+    }
+
+    private func scheduleNotifications() {
+        guard let manager = notificationManager else { return }
+        Task {
+            await manager.rescheduleAll(for: projects)
+        }
     }
 
     // MARK: - Project Operations
 
     func addProject(_ project: Project) {
         projects.append(project)
+        scheduleNotifications()
     }
 
     func deleteProject(at offsets: IndexSet) {
         projects.remove(atOffsets: offsets)
+        scheduleNotifications()
     }
 
     func addTask(_ task: ProjectTask, to projectID: UUID) {
         guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
         projects[index].tasks.append(task)
+        scheduleNotifications()
     }
 
     func updateTask(_ task: ProjectTask, in projectID: UUID) {
@@ -29,11 +40,13 @@ class ProjectStore {
               let taskIndex = projects[projectIndex].tasks.firstIndex(where: { $0.id == task.id })
         else { return }
         projects[projectIndex].tasks[taskIndex] = task
+        scheduleNotifications()
     }
 
     func deleteTask(_ taskID: UUID, from projectID: UUID) {
         guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }) else { return }
         projects[projectIndex].tasks.removeAll { $0.id == taskID }
+        scheduleNotifications()
     }
 
     // MARK: - Calendar Helpers
