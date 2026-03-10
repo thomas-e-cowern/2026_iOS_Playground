@@ -47,6 +47,7 @@ struct ProjectTask: Identifiable, Codable {
     var dueDate: Date
     var status: TaskStatus
     var priority: TaskPriority
+    var isArchived: Bool
 
     init(
         id: UUID = UUID(),
@@ -54,7 +55,8 @@ struct ProjectTask: Identifiable, Codable {
         details: String = "",
         dueDate: Date,
         status: TaskStatus = .notStarted,
-        priority: TaskPriority = .medium
+        priority: TaskPriority = .medium,
+        isArchived: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -62,6 +64,7 @@ struct ProjectTask: Identifiable, Codable {
         self.dueDate = dueDate
         self.status = status
         self.priority = priority
+        self.isArchived = isArchived
     }
 }
 
@@ -73,6 +76,7 @@ struct Project: Identifiable, Codable {
     var endDate: Date
     var tasks: [ProjectTask]
     var colorName: String
+    var isArchived: Bool
 
     init(
         id: UUID = UUID(),
@@ -81,7 +85,8 @@ struct Project: Identifiable, Codable {
         startDate: Date = .now,
         endDate: Date = Calendar.current.date(byAdding: .month, value: 1, to: .now) ?? .now,
         tasks: [ProjectTask] = [],
-        colorName: String = "blue"
+        colorName: String = "blue",
+        isArchived: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -90,11 +95,17 @@ struct Project: Identifiable, Codable {
         self.endDate = endDate
         self.tasks = tasks
         self.colorName = colorName
+        self.isArchived = isArchived
+    }
+
+    var activeTasks: [ProjectTask] {
+        tasks.filter { !$0.isArchived }
     }
 
     var completionPercentage: Double {
-        guard !tasks.isEmpty else { return 0 }
-        let completed = tasks.filter { $0.status == .completed }.count
-        return Double(completed) / Double(tasks.count)
+        let active = activeTasks
+        guard !active.isEmpty else { return 0 }
+        let completed = active.filter { $0.status == .completed }.count
+        return Double(completed) / Double(active.count)
     }
 }

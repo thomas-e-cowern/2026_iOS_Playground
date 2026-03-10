@@ -191,6 +191,179 @@ struct ProjectStoreTests {
         }
     }
 
+    // MARK: - Update Project
+
+    @Test func updateProjectChangesName() {
+        let store = ProjectStore()
+        var project = store.projects[0]
+        project.name = "Renamed"
+        store.updateProject(project)
+        #expect(store.projects[0].name == "Renamed")
+    }
+
+    @Test func updateProjectWithInvalidIDDoesNothing() {
+        let store = ProjectStore()
+        let fake = Project(id: UUID(), name: "Ghost")
+        store.updateProject(fake)
+        #expect(store.projects.allSatisfy { $0.name != "Ghost" })
+    }
+
+    // MARK: - Delete Project by ID
+
+    @Test func deleteProjectByIDRemovesProject() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        store.deleteProject(projectID)
+        #expect(store.projects.allSatisfy { $0.id != projectID })
+    }
+
+    @Test func deleteProjectByInvalidIDDoesNothing() {
+        let store = ProjectStore()
+        let initialCount = store.projects.count
+        store.deleteProject(UUID())
+        #expect(store.projects.count == initialCount)
+    }
+
+    // MARK: - Archive Project
+
+    @Test func archiveProjectSetsIsArchived() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        store.archiveProject(projectID)
+        #expect(store.projects.first(where: { $0.id == projectID })?.isArchived == true)
+    }
+
+    @Test func archivedProjectExcludedFromActiveProjects() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        store.archiveProject(projectID)
+        #expect(store.activeProjects.allSatisfy { $0.id != projectID })
+    }
+
+    @Test func archivedProjectAppearsInArchivedProjects() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        store.archiveProject(projectID)
+        #expect(store.archivedProjects.contains { $0.id == projectID })
+    }
+
+    @Test func unarchiveProjectRestoresProject() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        store.archiveProject(projectID)
+        #expect(store.activeProjects.allSatisfy { $0.id != projectID })
+        store.unarchiveProject(projectID)
+        #expect(store.activeProjects.contains { $0.id == projectID })
+        #expect(store.projects.first(where: { $0.id == projectID })?.isArchived == false)
+    }
+
+    @Test func archiveInvalidProjectDoesNothing() {
+        let store = ProjectStore()
+        store.archiveProject(UUID())
+        #expect(store.projects.allSatisfy { !$0.isArchived })
+    }
+
+    // MARK: - Archive Task
+
+    @Test func archiveTaskSetsIsArchived() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        let taskID = store.projects[0].tasks[0].id
+        store.archiveTask(taskID, in: projectID)
+        #expect(store.projects[0].tasks.first(where: { $0.id == taskID })?.isArchived == true)
+    }
+
+    @Test func archivedTaskExcludedFromActiveTasks() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        let taskID = store.projects[0].tasks[0].id
+        store.archiveTask(taskID, in: projectID)
+        #expect(store.projects[0].activeTasks.allSatisfy { $0.id != taskID })
+    }
+
+    @Test func unarchiveTaskRestoresTask() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        let taskID = store.projects[0].tasks[0].id
+        store.archiveTask(taskID, in: projectID)
+        #expect(store.projects[0].activeTasks.allSatisfy { $0.id != taskID })
+        store.unarchiveTask(taskID, in: projectID)
+        #expect(store.projects[0].activeTasks.contains { $0.id == taskID })
+    }
+
+    @Test func archiveTaskInvalidProjectDoesNothing() {
+        let store = ProjectStore()
+        let taskID = store.projects[0].tasks[0].id
+        store.archiveTask(taskID, in: UUID())
+        #expect(store.projects[0].tasks.first(where: { $0.id == taskID })?.isArchived == false)
+    }
+
+    @Test func archiveTaskInvalidTaskDoesNothing() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        store.archiveTask(UUID(), in: projectID)
+        #expect(store.projects[0].tasks.allSatisfy { !$0.isArchived })
+    }
+
+    // MARK: - Completed Projects
+
+    @Test func completedProjectsListsFullyComplete() {
+        let store = ProjectStore()
+        // Complete all tasks in the first project
+        let projectID = store.projects[0].id
+        for task in store.projects[0].tasks {
+            var updated = task
+            updated.status = .completed
+            store.updateTask(updated, in: projectID)
+        }
+        #expect(store.completedProjects.contains { $0.id == projectID })
+    }
+
+    @Test func completedProjectsExcludesArchivedProjects() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        for task in store.projects[0].tasks {
+            var updated = task
+            updated.status = .completed
+            store.updateTask(updated, in: projectID)
+        }
+        store.archiveProject(projectID)
+        #expect(store.completedProjects.allSatisfy { $0.id != projectID })
+    }
+
+    // MARK: - Calendar Helpers Exclude Archived
+
+    @Test func tasksForDateExcludesArchivedProjects() {
+        let store = ProjectStore()
+        let calendar = Calendar.current
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
+        // Archive the project that has the "Create wireframes" task
+        let projectID = store.projects[0].id
+        store.archiveProject(projectID)
+        let results = store.tasks(for: tomorrow)
+        #expect(results.allSatisfy { $0.project.id != projectID })
+    }
+
+    @Test func tasksForDateExcludesArchivedTasks() {
+        let store = ProjectStore()
+        let calendar = Calendar.current
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
+        let projectID = store.projects[0].id
+        let taskID = store.projects[0].tasks[0].id
+        store.archiveTask(taskID, in: projectID)
+        let results = store.tasks(for: tomorrow)
+        #expect(results.allSatisfy { $0.task.id != taskID })
+    }
+
+    @Test func allTasksExcludesArchivedItems() {
+        let store = ProjectStore()
+        let projectID = store.projects[0].id
+        let taskID = store.projects[0].tasks[0].id
+        let initialCount = store.allTasks().count
+        store.archiveTask(taskID, in: projectID)
+        #expect(store.allTasks().count == initialCount - 1)
+    }
+
     // MARK: - Integration Scenarios
 
     @Test func addThenDeleteTask() {

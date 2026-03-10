@@ -70,6 +70,7 @@ struct ProjectTaskTests {
         #expect(task.details == "")
         #expect(task.status == .notStarted)
         #expect(task.priority == .medium)
+        #expect(task.isArchived == false)
     }
 
     @Test func customInitValues() {
@@ -120,6 +121,29 @@ struct ProjectTests {
         #expect(project.description == "")
         #expect(project.tasks.isEmpty)
         #expect(project.colorName == "blue")
+        #expect(project.isArchived == false)
+    }
+
+    @Test func activeTasksExcludesArchived() {
+        let tasks = [
+            ProjectTask(title: "A", dueDate: .now),
+            ProjectTask(title: "B", dueDate: .now, isArchived: true),
+            ProjectTask(title: "C", dueDate: .now),
+        ]
+        let project = Project(name: "Filter Test", tasks: tasks)
+        #expect(project.activeTasks.count == 2)
+        #expect(project.activeTasks.allSatisfy { !$0.isArchived })
+    }
+
+    @Test func completionPercentageIgnoresArchivedTasks() {
+        let tasks = [
+            ProjectTask(title: "A", dueDate: .now, status: .completed),
+            ProjectTask(title: "B", dueDate: .now, status: .notStarted),
+            ProjectTask(title: "C", dueDate: .now, status: .completed, isArchived: true),
+        ]
+        let project = Project(name: "Mixed", tasks: tasks)
+        // Only active: A (completed), B (not started) → 50%
+        #expect(project.completionPercentage == 0.5)
     }
 
     @Test func completionPercentageWithNoTasks() {

@@ -6,6 +6,18 @@ class ProjectStore {
     var projects: [Project] = []
     var notificationManager: NotificationManager?
 
+    var activeProjects: [Project] {
+        projects.filter { !$0.isArchived }
+    }
+
+    var archivedProjects: [Project] {
+        projects.filter { $0.isArchived }
+    }
+
+    var completedProjects: [Project] {
+        projects.filter { !$0.isArchived && $0.completionPercentage == 1.0 }
+    }
+
     init() {
         loadSampleData()
     }
@@ -13,7 +25,7 @@ class ProjectStore {
     private func scheduleNotifications() {
         guard let manager = notificationManager else { return }
         Task {
-            await manager.rescheduleAll(for: projects)
+            await manager.rescheduleAll(for: activeProjects)
         }
     }
 
@@ -24,10 +36,35 @@ class ProjectStore {
         scheduleNotifications()
     }
 
+    func updateProject(_ project: Project) {
+        guard let index = projects.firstIndex(where: { $0.id == project.id }) else { return }
+        projects[index] = project
+        scheduleNotifications()
+    }
+
     func deleteProject(at offsets: IndexSet) {
         projects.remove(atOffsets: offsets)
         scheduleNotifications()
     }
+
+    func deleteProject(_ projectID: UUID) {
+        projects.removeAll { $0.id == projectID }
+        scheduleNotifications()
+    }
+
+    func archiveProject(_ projectID: UUID) {
+        guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[index].isArchived = true
+        scheduleNotifications()
+    }
+
+    func unarchiveProject(_ projectID: UUID) {
+        guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[index].isArchived = false
+        scheduleNotifications()
+    }
+
+    // MARK: - Task Operations
 
     func addTask(_ task: ProjectTask, to projectID: UUID) {
         guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
@@ -49,13 +86,29 @@ class ProjectStore {
         scheduleNotifications()
     }
 
+    func archiveTask(_ taskID: UUID, in projectID: UUID) {
+        guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }),
+              let taskIndex = projects[projectIndex].tasks.firstIndex(where: { $0.id == taskID })
+        else { return }
+        projects[projectIndex].tasks[taskIndex].isArchived = true
+        scheduleNotifications()
+    }
+
+    func unarchiveTask(_ taskID: UUID, in projectID: UUID) {
+        guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }),
+              let taskIndex = projects[projectIndex].tasks.firstIndex(where: { $0.id == taskID })
+        else { return }
+        projects[projectIndex].tasks[taskIndex].isArchived = false
+        scheduleNotifications()
+    }
+
     // MARK: - Calendar Helpers
 
     func tasks(for date: Date) -> [(project: Project, task: ProjectTask)] {
         let calendar = Calendar.current
         var results: [(project: Project, task: ProjectTask)] = []
-        for project in projects {
-            for task in project.tasks {
+        for project in activeProjects {
+            for task in project.activeTasks {
                 if calendar.isDate(task.dueDate, inSameDayAs: date) {
                     results.append((project: project, task: task))
                 }
@@ -66,8 +119,8 @@ class ProjectStore {
 
     func allTasks() -> [(project: Project, task: ProjectTask)] {
         var results: [(project: Project, task: ProjectTask)] = []
-        for project in projects {
-            for task in project.tasks {
+        for project in activeProjects {
+            for task in project.activeTasks {
                 results.append((project: project, task: task))
             }
         }

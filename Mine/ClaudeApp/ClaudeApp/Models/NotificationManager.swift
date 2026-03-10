@@ -138,10 +138,10 @@ class NotificationManager: @unchecked Sendable {
     // MARK: - Badge
 
     func updateBadge(count: Int) {
-        try? center.setBadgeCount(count)
+        center.setBadgeCount(count)
     }
 
     func clearBadge() {
-        try? center.setBadgeCount(0)
+        center.setBadgeCount(0)
     }
 }

@@ -17,6 +17,10 @@ struct ContentView: View {
             Tab("Projects", systemImage: "folder.fill") {
                 ProjectListView()
             }
+
+            Tab("Archive", systemImage: "archivebox") {
+                ArchiveView()
+            }
         }
     }
 }
