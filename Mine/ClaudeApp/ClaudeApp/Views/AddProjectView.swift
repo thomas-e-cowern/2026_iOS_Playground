@@ -9,6 +9,7 @@ struct AddProjectView: View {
     @State private var startDate = Date.now
     @State private var endDate = Calendar.current.date(byAdding: .month, value: 1, to: .now) ?? .now
     @State private var selectedColor = "blue"
+    @State private var selectedCategory: ProjectCategory = .other
 
     private let colorOptions = [
         ("blue", Color.blue),
@@ -31,6 +32,15 @@ struct AddProjectView: View {
                 Section("Dates") {
                     DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
                     DatePicker("End Date", selection: $endDate, in: startDate..., displayedComponents: .date)
+                }
+
+                Section("Category") {
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(ProjectCategory.allCases, id: \.self) { category in
+                            Label(category.rawValue, systemImage: category.icon)
+                                .tag(category)
+                        }
+                    }
                 }
 
                 Section("Color") {
@@ -68,7 +78,8 @@ struct AddProjectView: View {
                             descriptionText: description,
                             startDate: startDate,
                             endDate: endDate,
-                            colorName: selectedColor
+                            colorName: selectedColor,
+                            category: selectedCategory
                         )
                         store.addProject(project)
                         dismiss()

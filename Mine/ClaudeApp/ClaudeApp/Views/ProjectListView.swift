@@ -108,6 +108,10 @@ struct ProjectRow: View {
                     .lineLimit(1)
 
                 HStack(spacing: 12) {
+                    Label(project.category.rawValue, systemImage: project.category.icon)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
                     Label("\(project.tasks.count) tasks", systemImage: "checklist")
                         .font(.caption2)
                         .foregroundStyle(.secondary)

@@ -11,6 +11,7 @@ struct EditProjectView: View {
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var selectedColor: String
+    @State private var selectedCategory: ProjectCategory
 
     private let colorOptions = [
         ("blue", Color.blue),
@@ -28,6 +29,7 @@ struct EditProjectView: View {
         _startDate = State(initialValue: project.startDate)
         _endDate = State(initialValue: project.endDate)
         _selectedColor = State(initialValue: project.colorName)
+        _selectedCategory = State(initialValue: project.category)
     }
 
     var body: some View {
@@ -42,6 +44,15 @@ struct EditProjectView: View {
                 Section("Dates") {
                     DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
                     DatePicker("End Date", selection: $endDate, in: startDate..., displayedComponents: .date)
+                }
+
+                Section("Category") {
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(ProjectCategory.allCases, id: \.self) { category in
+                            Label(category.rawValue, systemImage: category.icon)
+                                .tag(category)
+                        }
+                    }
                 }
 
                 Section("Color") {
@@ -80,6 +91,7 @@ struct EditProjectView: View {
                         updated.startDate = startDate
                         updated.endDate = endDate
                         updated.colorName = selectedColor
+                        updated.category = selectedCategory
                         store.updateProject(updated)
                         dismiss()
                     }

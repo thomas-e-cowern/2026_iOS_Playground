@@ -41,6 +41,26 @@ enum TaskPriority: String, Codable, CaseIterable, Comparable {
     }
 }
 
+enum ProjectCategory: String, Codable, CaseIterable {
+    case work = "Work"
+    case personal = "Personal"
+    case education = "Education"
+    case health = "Health"
+    case finance = "Finance"
+    case other = "Other"
+
+    var icon: String {
+        switch self {
+        case .work: return "briefcase.fill"
+        case .personal: return "person.fill"
+        case .education: return "book.fill"
+        case .health: return "heart.fill"
+        case .finance: return "dollarsign.circle.fill"
+        case .other: return "folder.fill"
+        }
+    }
+}
+
 @Model
 class ProjectTask {
     var id: UUID
@@ -81,6 +101,7 @@ class Project {
     @Relationship(deleteRule: .cascade, inverse: \ProjectTask.project)
     var tasks: [ProjectTask]
     var colorName: String
+    var category: ProjectCategory
     var isArchived: Bool
 
     init(
@@ -91,6 +112,7 @@ class Project {
         endDate: Date = Calendar.current.date(byAdding: .month, value: 1, to: .now) ?? .now,
         tasks: [ProjectTask] = [],
         colorName: String = "blue",
+        category: ProjectCategory = .other,
         isArchived: Bool = false
     ) {
         self.id = id
@@ -100,6 +122,7 @@ class Project {
         self.endDate = endDate
         self.tasks = tasks
         self.colorName = colorName
+        self.category = category
         self.isArchived = isArchived
     }
 

@@ -82,6 +82,10 @@ struct ProjectDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
+            LabeledContent("Category") {
+                Label(currentProject.category.rawValue, systemImage: currentProject.category.icon)
+            }
+
             LabeledContent("Start Date") {
                 Text(currentProject.startDate, style: .date)
             }

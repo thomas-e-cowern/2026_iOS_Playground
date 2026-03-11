@@ -7,11 +7,8 @@ import SwiftData
 class ProjectStore {
     let modelContext: ModelContext
     var notificationManager: NotificationManager?
-
-    var projects: [Project] {
-        let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
-        return (try? modelContext.fetch(descriptor)) ?? []
-    }
+    private(set) var projects: [Project] = []
+    var errorMessage: String?
 
     var activeProjects: [Project] {
         projects.filter { !$0.isArchived }
@@ -28,10 +25,21 @@ class ProjectStore {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         loadSampleDataIfNeeded()
+        refreshProjects()
+    }
+
+    private func refreshProjects() {
+        let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
+        projects = (try? modelContext.fetch(descriptor)) ?? []
     }
 
     private func save() {
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = "Failed to save: \(error.localizedDescription)"
+        }
+        refreshProjects()
     }
 
     private func scheduleNotifications() {
