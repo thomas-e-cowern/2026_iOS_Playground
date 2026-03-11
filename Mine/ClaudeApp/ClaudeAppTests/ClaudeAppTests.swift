@@ -1,6 +1,16 @@
 import Testing
 import Foundation
+import SwiftData
 @testable import ClaudeApp
+
+// MARK: - Test Helpers
+
+@MainActor
+private func makeContext() -> ModelContext {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+    return container.mainContext
+}
 
 // MARK: - TaskStatus Tests
 
@@ -65,7 +75,9 @@ struct TaskPriorityTests {
 struct ProjectTaskTests {
 
     @Test func defaultInitValues() {
+        let context = makeContext()
         let task = ProjectTask(title: "Test", dueDate: .now)
+        context.insert(task)
         #expect(task.title == "Test")
         #expect(task.details == "")
         #expect(task.status == .notStarted)
@@ -74,6 +86,7 @@ struct ProjectTaskTests {
     }
 
     @Test func customInitValues() {
+        let context = makeContext()
         let date = Date.now
         let id = UUID()
         let task = ProjectTask(
@@ -84,29 +97,13 @@ struct ProjectTaskTests {
             status: .completed,
             priority: .high
         )
+        context.insert(task)
         #expect(task.id == id)
         #expect(task.title == "Custom")
         #expect(task.details == "Some details")
         #expect(task.dueDate == date)
         #expect(task.status == .completed)
         #expect(task.priority == .high)
-    }
-
-    @Test func encodingAndDecoding() throws {
-        let task = ProjectTask(
-            title: "Encode Me",
-            details: "Details",
-            dueDate: Date(timeIntervalSince1970: 1000000),
-            status: .inProgress,
-            priority: .low
-        )
-        let data = try JSONEncoder().encode(task)
-        let decoded = try JSONDecoder().decode(ProjectTask.self, from: data)
-        #expect(decoded.id == task.id)
-        #expect(decoded.title == task.title)
-        #expect(decoded.details == task.details)
-        #expect(decoded.status == task.status)
-        #expect(decoded.priority == task.priority)
     }
 }
 
@@ -116,51 +113,61 @@ struct ProjectTaskTests {
 struct ProjectTests {
 
     @Test func defaultInitValues() {
+        let context = makeContext()
         let project = Project(name: "Test Project")
+        context.insert(project)
         #expect(project.name == "Test Project")
-        #expect(project.description == "")
+        #expect(project.descriptionText == "")
         #expect(project.tasks.isEmpty)
         #expect(project.colorName == "blue")
         #expect(project.isArchived == false)
     }
 
     @Test func activeTasksExcludesArchived() {
+        let context = makeContext()
         let tasks = [
             ProjectTask(title: "A", dueDate: .now),
             ProjectTask(title: "B", dueDate: .now, isArchived: true),
             ProjectTask(title: "C", dueDate: .now),
         ]
         let project = Project(name: "Filter Test", tasks: tasks)
+        context.insert(project)
         #expect(project.activeTasks.count == 2)
         #expect(project.activeTasks.allSatisfy { !$0.isArchived })
     }
 
     @Test func completionPercentageIgnoresArchivedTasks() {
+        let context = makeContext()
         let tasks = [
             ProjectTask(title: "A", dueDate: .now, status: .completed),
             ProjectTask(title: "B", dueDate: .now, status: .notStarted),
             ProjectTask(title: "C", dueDate: .now, status: .completed, isArchived: true),
         ]
         let project = Project(name: "Mixed", tasks: tasks)
-        // Only active: A (completed), B (not started) → 50%
+        context.insert(project)
         #expect(project.completionPercentage == 0.5)
     }
 
     @Test func completionPercentageWithNoTasks() {
+        let context = makeContext()
         let project = Project(name: "Empty")
+        context.insert(project)
         #expect(project.completionPercentage == 0)
     }
 
     @Test func completionPercentageWithAllCompleted() {
+        let context = makeContext()
         let tasks = [
             ProjectTask(title: "A", dueDate: .now, status: .completed),
             ProjectTask(title: "B", dueDate: .now, status: .completed),
         ]
         let project = Project(name: "Done", tasks: tasks)
+        context.insert(project)
         #expect(project.completionPercentage == 1.0)
     }
 
     @Test func completionPercentagePartial() {
+        let context = makeContext()
         let tasks = [
             ProjectTask(title: "A", dueDate: .now, status: .completed),
             ProjectTask(title: "B", dueDate: .now, status: .inProgress),
@@ -168,31 +175,18 @@ struct ProjectTests {
             ProjectTask(title: "D", dueDate: .now, status: .completed),
         ]
         let project = Project(name: "Partial", tasks: tasks)
+        context.insert(project)
         #expect(project.completionPercentage == 0.5)
     }
 
     @Test func completionPercentageNoneCompleted() {
+        let context = makeContext()
         let tasks = [
             ProjectTask(title: "A", dueDate: .now, status: .notStarted),
             ProjectTask(title: "B", dueDate: .now, status: .inProgress),
         ]
         let project = Project(name: "None", tasks: tasks)
+        context.insert(project)
         #expect(project.completionPercentage == 0.0)
-    }
-
-    @Test func encodingAndDecoding() throws {
-        let project = Project(
-            name: "Encode Project",
-            description: "Test encoding",
-            tasks: [ProjectTask(title: "Task", dueDate: Date(timeIntervalSince1970: 1000000))],
-            colorName: "purple"
-        )
-        let data = try JSONEncoder().encode(project)
-        let decoded = try JSONDecoder().decode(Project.self, from: data)
-        #expect(decoded.id == project.id)
-        #expect(decoded.name == project.name)
-        #expect(decoded.description == project.description)
-        #expect(decoded.tasks.count == 1)
-        #expect(decoded.colorName == "purple")
     }
 }

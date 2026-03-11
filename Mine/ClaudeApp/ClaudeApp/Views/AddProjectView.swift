@@ -65,7 +65,7 @@ struct AddProjectView: View {
                     Button("Add") {
                         let project = Project(
                             name: name,
-                            description: description,
+                            descriptionText: description,
                             startDate: startDate,
                             endDate: endDate,
                             colorName: selectedColor
@@ -82,5 +82,5 @@ struct AddProjectView: View {
 
 #Preview {
     AddProjectView()
-        .environment(ProjectStore())
+        .environment(ProjectStore.preview())
 }

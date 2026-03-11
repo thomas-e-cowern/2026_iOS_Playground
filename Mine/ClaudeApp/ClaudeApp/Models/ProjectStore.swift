@@ -1,10 +1,17 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
+@MainActor
 @Observable
 class ProjectStore {
-    var projects: [Project] = []
+    let modelContext: ModelContext
     var notificationManager: NotificationManager?
+
+    var projects: [Project] {
+        let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
+        return (try? modelContext.fetch(descriptor)) ?? []
+    }
 
     var activeProjects: [Project] {
         projects.filter { !$0.isArchived }
@@ -18,87 +25,108 @@ class ProjectStore {
         projects.filter { !$0.isArchived && $0.completionPercentage == 1.0 }
     }
 
-    init() {
-        loadSampleData()
+    init(modelContext: ModelContext) {
+        self.modelContext = modelContext
+        loadSampleDataIfNeeded()
+    }
+
+    private func save() {
+        try? modelContext.save()
     }
 
     private func scheduleNotifications() {
         guard let manager = notificationManager else { return }
+        let currentProjects = activeProjects
         Task {
-            await manager.rescheduleAll(for: activeProjects)
+            await manager.rescheduleAll(for: currentProjects)
         }
     }
 
     // MARK: - Project Operations
 
     func addProject(_ project: Project) {
-        projects.append(project)
+        modelContext.insert(project)
+        save()
         scheduleNotifications()
     }
 
     func updateProject(_ project: Project) {
-        guard let index = projects.firstIndex(where: { $0.id == project.id }) else { return }
-        projects[index] = project
+        save()
         scheduleNotifications()
     }
 
     func deleteProject(at offsets: IndexSet) {
-        projects.remove(atOffsets: offsets)
+        let active = activeProjects
+        for index in offsets {
+            modelContext.delete(active[index])
+        }
+        save()
         scheduleNotifications()
     }
 
     func deleteProject(_ projectID: UUID) {
-        projects.removeAll { $0.id == projectID }
+        if let project = projects.first(where: { $0.id == projectID }) {
+            modelContext.delete(project)
+            save()
+        }
         scheduleNotifications()
     }
 
     func archiveProject(_ projectID: UUID) {
-        guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
-        projects[index].isArchived = true
+        if let project = projects.first(where: { $0.id == projectID }) {
+            project.isArchived = true
+            save()
+        }
         scheduleNotifications()
     }
 
     func unarchiveProject(_ projectID: UUID) {
-        guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
-        projects[index].isArchived = false
+        if let project = projects.first(where: { $0.id == projectID }) {
+            project.isArchived = false
+            save()
+        }
         scheduleNotifications()
     }
 
     // MARK: - Task Operations
 
     func addTask(_ task: ProjectTask, to projectID: UUID) {
-        guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
-        projects[index].tasks.append(task)
+        if let project = projects.first(where: { $0.id == projectID }) {
+            project.tasks.append(task)
+            save()
+        }
         scheduleNotifications()
     }
 
     func updateTask(_ task: ProjectTask, in projectID: UUID) {
-        guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }),
-              let taskIndex = projects[projectIndex].tasks.firstIndex(where: { $0.id == task.id })
-        else { return }
-        projects[projectIndex].tasks[taskIndex] = task
+        save()
         scheduleNotifications()
     }
 
     func deleteTask(_ taskID: UUID, from projectID: UUID) {
-        guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }) else { return }
-        projects[projectIndex].tasks.removeAll { $0.id == taskID }
+        if let project = projects.first(where: { $0.id == projectID }),
+           let task = project.tasks.first(where: { $0.id == taskID }) {
+            modelContext.delete(task)
+            save()
+        }
         scheduleNotifications()
     }
 
     func archiveTask(_ taskID: UUID, in projectID: UUID) {
-        guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }),
-              let taskIndex = projects[projectIndex].tasks.firstIndex(where: { $0.id == taskID })
-        else { return }
-        projects[projectIndex].tasks[taskIndex].isArchived = true
+        if let project = projects.first(where: { $0.id == projectID }),
+           let task = project.tasks.first(where: { $0.id == taskID }) {
+            task.isArchived = true
+            save()
+        }
         scheduleNotifications()
     }
 
     func unarchiveTask(_ taskID: UUID, in projectID: UUID) {
-        guard let projectIndex = projects.firstIndex(where: { $0.id == projectID }),
-              let taskIndex = projects[projectIndex].tasks.firstIndex(where: { $0.id == taskID })
-        else { return }
-        projects[projectIndex].tasks[taskIndex].isArchived = false
+        if let project = projects.first(where: { $0.id == projectID }),
+           let task = project.tasks.first(where: { $0.id == taskID }) {
+            task.isArchived = false
+            save()
+        }
         scheduleNotifications()
     }
 
@@ -127,7 +155,22 @@ class ProjectStore {
         return results
     }
 
+    // MARK: - Preview Helper
+
+    static func preview() -> ProjectStore {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+        return ProjectStore(modelContext: container.mainContext)
+    }
+
     // MARK: - Sample Data
+
+    private func loadSampleDataIfNeeded() {
+        let descriptor = FetchDescriptor<Project>()
+        let count = (try? modelContext.fetchCount(descriptor)) ?? 0
+        guard count == 0 else { return }
+        loadSampleData()
+    }
 
     private func loadSampleData() {
         let calendar = Calendar.current
@@ -155,10 +198,13 @@ class ProjectStore {
             ProjectTask(title: "Press release", details: "Draft and finalize launch press release", dueDate: calendar.date(byAdding: .day, value: 15, to: today)!, status: .notStarted, priority: .low),
         ]
 
-        projects = [
-            Project(name: "App Redesign", description: "Complete UI/UX overhaul of the mobile app", startDate: today, endDate: calendar.date(byAdding: .month, value: 1, to: today)!, tasks: designTasks, colorName: "blue"),
-            Project(name: "Backend Overhaul", description: "Migrate to new backend architecture", startDate: today, endDate: calendar.date(byAdding: .month, value: 2, to: today)!, tasks: backendTasks, colorName: "purple"),
-            Project(name: "Marketing Launch", description: "Coordinate marketing efforts for product launch", startDate: calendar.date(byAdding: .day, value: -5, to: today)!, endDate: calendar.date(byAdding: .month, value: 1, to: today)!, tasks: marketingTasks, colorName: "orange"),
-        ]
+        let project1 = Project(name: "App Redesign", descriptionText: "Complete UI/UX overhaul of the mobile app", startDate: today, endDate: calendar.date(byAdding: .month, value: 1, to: today)!, tasks: designTasks, colorName: "blue")
+        let project2 = Project(name: "Backend Overhaul", descriptionText: "Migrate to new backend architecture", startDate: today, endDate: calendar.date(byAdding: .month, value: 2, to: today)!, tasks: backendTasks, colorName: "purple")
+        let project3 = Project(name: "Marketing Launch", descriptionText: "Coordinate marketing efforts for product launch", startDate: calendar.date(byAdding: .day, value: -5, to: today)!, endDate: calendar.date(byAdding: .month, value: 1, to: today)!, tasks: marketingTasks, colorName: "orange")
+
+        modelContext.insert(project1)
+        modelContext.insert(project2)
+        modelContext.insert(project3)
+        save()
     }
 }

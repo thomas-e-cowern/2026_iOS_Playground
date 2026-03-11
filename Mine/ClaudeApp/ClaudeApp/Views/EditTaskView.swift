@@ -64,7 +64,7 @@ struct EditTaskView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        var updated = task
+                        let updated = task
                         updated.title = title
                         updated.details = details
                         updated.dueDate = dueDate
@@ -85,5 +85,5 @@ struct EditTaskView: View {
         task: ProjectTask(title: "Sample Task", dueDate: .now, priority: .high),
         projectID: UUID()
     )
-    .environment(ProjectStore())
+    .environment(ProjectStore.preview())
 }

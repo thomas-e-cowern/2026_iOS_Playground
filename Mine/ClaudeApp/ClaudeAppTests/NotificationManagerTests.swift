@@ -1,6 +1,23 @@
 import Testing
 import Foundation
+import SwiftData
 @testable import ClaudeApp
+
+// MARK: - Test Helpers
+
+@MainActor
+private func makeContext() -> ModelContext {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+    return container.mainContext
+}
+
+@MainActor
+private func makeStore() -> ProjectStore {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+    return ProjectStore(modelContext: container.mainContext)
+}
 
 @MainActor
 struct NotificationManagerTests {
@@ -16,6 +33,7 @@ struct NotificationManagerTests {
 
     @Test func rescheduleSkipsCompletedTasks() async {
         let manager = NotificationManager()
+        let context = makeContext()
         let calendar = Calendar.current
 
         let completedTask = ProjectTask(
@@ -28,8 +46,8 @@ struct NotificationManagerTests {
             name: "Test Project",
             tasks: [completedTask]
         )
+        context.insert(project)
 
-        // Should not crash even when not authorized — just silently skips
         await manager.rescheduleAll(for: [project])
     }
 
@@ -40,33 +58,36 @@ struct NotificationManagerTests {
 
     @Test func rescheduleHandlesProjectWithNoTasks() async {
         let manager = NotificationManager()
+        let context = makeContext()
         let project = Project(name: "Empty Project")
+        context.insert(project)
         await manager.rescheduleAll(for: [project])
     }
 
     @Test func rescheduleHandlesMultipleProjects() async {
         let manager = NotificationManager()
+        let context = makeContext()
         let calendar = Calendar.current
 
-        let projects = [
-            Project(
-                name: "Project A",
-                endDate: calendar.date(byAdding: .day, value: 10, to: .now)!,
-                tasks: [
-                    ProjectTask(title: "Task A1", dueDate: calendar.date(byAdding: .day, value: 2, to: .now)!, priority: .high),
-                    ProjectTask(title: "Task A2", dueDate: calendar.date(byAdding: .day, value: 7, to: .now)!, priority: .low),
-                ]
-            ),
-            Project(
-                name: "Project B",
-                endDate: calendar.date(byAdding: .day, value: 20, to: .now)!,
-                tasks: [
-                    ProjectTask(title: "Task B1", dueDate: calendar.date(byAdding: .day, value: 3, to: .now)!, priority: .medium),
-                ]
-            ),
-        ]
+        let projectA = Project(
+            name: "Project A",
+            endDate: calendar.date(byAdding: .day, value: 10, to: .now)!,
+            tasks: [
+                ProjectTask(title: "Task A1", dueDate: calendar.date(byAdding: .day, value: 2, to: .now)!, priority: .high),
+                ProjectTask(title: "Task A2", dueDate: calendar.date(byAdding: .day, value: 7, to: .now)!, priority: .low),
+            ]
+        )
+        let projectB = Project(
+            name: "Project B",
+            endDate: calendar.date(byAdding: .day, value: 20, to: .now)!,
+            tasks: [
+                ProjectTask(title: "Task B1", dueDate: calendar.date(byAdding: .day, value: 3, to: .now)!, priority: .medium),
+            ]
+        )
+        context.insert(projectA)
+        context.insert(projectB)
 
-        await manager.rescheduleAll(for: projects)
+        await manager.rescheduleAll(for: [projectA, projectB])
     }
 
     // MARK: - Badge
@@ -93,80 +114,84 @@ struct NotificationManagerTests {
 struct ProjectStoreNotificationIntegrationTests {
 
     @Test func storeNotificationManagerDefaultsToNil() {
-        let store = ProjectStore()
+        let store = makeStore()
         #expect(store.notificationManager == nil)
     }
 
     @Test func storeAcceptsNotificationManager() {
-        let store = ProjectStore()
+        let store = makeStore()
         let manager = NotificationManager()
         store.notificationManager = manager
         #expect(store.notificationManager != nil)
     }
 
     @Test func addProjectTriggersRescheduleWithoutCrash() {
-        let store = ProjectStore()
+        let store = makeStore()
         let manager = NotificationManager()
         store.notificationManager = manager
 
         let project = Project(name: "Notification Test")
         store.addProject(project)
-        #expect(store.projects.last?.name == "Notification Test")
+        #expect(store.projects.contains { $0.name == "Notification Test" })
     }
 
     @Test func addTaskTriggersRescheduleWithoutCrash() {
-        let store = ProjectStore()
+        let store = makeStore()
         let manager = NotificationManager()
         store.notificationManager = manager
 
-        let projectID = store.projects[0].id
+        let project = store.projects[0]
+        let projectID = project.id
         let task = ProjectTask(title: "Notified Task", dueDate: .now, priority: .high)
         store.addTask(task, to: projectID)
-        #expect(store.projects[0].tasks.last?.title == "Notified Task")
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        #expect(updatedProject.tasks.contains { $0.title == "Notified Task" })
     }
 
     @Test func updateTaskTriggersRescheduleWithoutCrash() {
-        let store = ProjectStore()
+        let store = makeStore()
         let manager = NotificationManager()
         store.notificationManager = manager
 
-        let projectID = store.projects[0].id
-        var task = store.projects[0].tasks[0]
+        let project = store.projects[0]
+        let projectID = project.id
+        let task = project.tasks[0]
         task.status = .completed
         store.updateTask(task, in: projectID)
     }
 
     @Test func deleteTaskTriggersRescheduleWithoutCrash() {
-        let store = ProjectStore()
+        let store = makeStore()
         let manager = NotificationManager()
         store.notificationManager = manager
 
-        let projectID = store.projects[0].id
-        let taskID = store.projects[0].tasks[0].id
+        let project = store.projects[0]
+        let projectID = project.id
+        let taskID = project.tasks[0].id
         store.deleteTask(taskID, from: projectID)
     }
 
     @Test func deleteProjectTriggersRescheduleWithoutCrash() {
-        let store = ProjectStore()
+        let store = makeStore()
         let manager = NotificationManager()
         store.notificationManager = manager
 
-        store.deleteProject(at: IndexSet(integer: 0))
+        let projectID = store.activeProjects[0].id
+        store.deleteProject(projectID)
     }
 
     @Test func mutationsWorkWithoutNotificationManager() {
-        let store = ProjectStore()
-        // notificationManager is nil — all mutations should work fine
+        let store = makeStore()
         let project = Project(name: "No Manager")
         store.addProject(project)
-        store.deleteProject(at: IndexSet(integer: store.projects.count - 1))
+        store.deleteProject(project.id)
 
-        let projectID = store.projects[0].id
+        let existingProject = store.projects[0]
+        let projectID = existingProject.id
         let task = ProjectTask(title: "Test", dueDate: .now)
         store.addTask(task, to: projectID)
-        var updatedTask = task
-        updatedTask.title = "Updated"
-        store.updateTask(updatedTask, in: projectID)
+        task.title = "Updated"
+        store.updateTask(task, in: projectID)
         store.deleteTask(task.id, from: projectID)
     }
 }

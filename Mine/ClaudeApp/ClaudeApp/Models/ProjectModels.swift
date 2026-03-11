@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum TaskStatus: String, Codable, CaseIterable {
     case notStarted = "Not Started"
@@ -40,14 +41,16 @@ enum TaskPriority: String, Codable, CaseIterable, Comparable {
     }
 }
 
-struct ProjectTask: Identifiable, Codable {
-    let id: UUID
+@Model
+class ProjectTask {
+    var id: UUID
     var title: String
     var details: String
     var dueDate: Date
     var status: TaskStatus
     var priority: TaskPriority
     var isArchived: Bool
+    var project: Project?
 
     init(
         id: UUID = UUID(),
@@ -68,12 +71,14 @@ struct ProjectTask: Identifiable, Codable {
     }
 }
 
-struct Project: Identifiable, Codable {
-    let id: UUID
+@Model
+class Project {
+    var id: UUID
     var name: String
-    var description: String
+    var descriptionText: String
     var startDate: Date
     var endDate: Date
+    @Relationship(deleteRule: .cascade, inverse: \ProjectTask.project)
     var tasks: [ProjectTask]
     var colorName: String
     var isArchived: Bool
@@ -81,7 +86,7 @@ struct Project: Identifiable, Codable {
     init(
         id: UUID = UUID(),
         name: String,
-        description: String = "",
+        descriptionText: String = "",
         startDate: Date = .now,
         endDate: Date = Calendar.current.date(byAdding: .month, value: 1, to: .now) ?? .now,
         tasks: [ProjectTask] = [],
@@ -90,7 +95,7 @@ struct Project: Identifiable, Codable {
     ) {
         self.id = id
         self.name = name
-        self.description = description
+        self.descriptionText = descriptionText
         self.startDate = startDate
         self.endDate = endDate
         self.tasks = tasks

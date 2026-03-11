@@ -147,7 +147,7 @@ struct ArchiveView: View {
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button {
-                                        var updated = task
+                                        let updated = task
                                         updated.status = .inProgress
                                         store.updateTask(updated, in: project.id)
                                     } label: {
@@ -179,8 +179,8 @@ struct ArchivedProjectRow: View {
                 Text(project.name)
                     .font(.headline)
 
-                if !project.description.isEmpty {
-                    Text(project.description)
+                if !project.descriptionText.isEmpty {
+                    Text(project.descriptionText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -293,5 +293,5 @@ struct ArchivedTaskRow: View {
 
 #Preview {
     ArchiveView()
-        .environment(ProjectStore())
+        .environment(ProjectStore.preview())
 }

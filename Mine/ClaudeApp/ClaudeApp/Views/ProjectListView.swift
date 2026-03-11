@@ -102,7 +102,7 @@ struct ProjectRow: View {
                 Text(project.name)
                     .font(.headline)
 
-                Text(project.description)
+                Text(project.descriptionText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -139,5 +139,5 @@ struct ProjectRow: View {
 
 #Preview {
     ProjectListView()
-        .environment(ProjectStore())
+        .environment(ProjectStore.preview())
 }

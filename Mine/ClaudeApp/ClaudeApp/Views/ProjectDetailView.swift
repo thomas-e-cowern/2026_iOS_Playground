@@ -76,8 +76,8 @@ struct ProjectDetailView: View {
 
     private var projectInfoSection: some View {
         Section("Details") {
-            if !currentProject.description.isEmpty {
-                Text(currentProject.description)
+            if !currentProject.descriptionText.isEmpty {
+                Text(currentProject.descriptionText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -249,7 +249,7 @@ struct TaskRow: View {
     }
 
     private func cycleStatus() {
-        var updated = task
+        let updated = task
         switch task.status {
         case .notStarted: updated.status = .inProgress
         case .inProgress: updated.status = .completed
@@ -281,11 +281,11 @@ struct TaskRow: View {
 
 #Preview {
     NavigationStack {
-        ProjectDetailView(project: Project(name: "Sample", description: "A sample project", tasks: [
+        ProjectDetailView(project: Project(name: "Sample", descriptionText: "A sample project", tasks: [
             ProjectTask(title: "Task 1", dueDate: .now, status: .completed, priority: .high),
             ProjectTask(title: "Task 2", dueDate: .now, status: .inProgress, priority: .medium),
             ProjectTask(title: "Task 3", dueDate: .now, priority: .low),
         ]))
     }
-    .environment(ProjectStore())
+    .environment(ProjectStore.preview())
 }

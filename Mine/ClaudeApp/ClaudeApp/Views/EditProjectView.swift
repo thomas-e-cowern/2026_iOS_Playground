@@ -24,7 +24,7 @@ struct EditProjectView: View {
     init(project: Project) {
         self.project = project
         _name = State(initialValue: project.name)
-        _description = State(initialValue: project.description)
+        _description = State(initialValue: project.descriptionText)
         _startDate = State(initialValue: project.startDate)
         _endDate = State(initialValue: project.endDate)
         _selectedColor = State(initialValue: project.colorName)
@@ -74,9 +74,9 @@ struct EditProjectView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        var updated = project
+                        let updated = project
                         updated.name = name
-                        updated.description = description
+                        updated.descriptionText = description
                         updated.startDate = startDate
                         updated.endDate = endDate
                         updated.colorName = selectedColor
@@ -91,6 +91,6 @@ struct EditProjectView: View {
 }
 
 #Preview {
-    EditProjectView(project: Project(name: "Sample", description: "A sample project"))
-        .environment(ProjectStore())
+    EditProjectView(project: Project(name: "Sample", descriptionText: "A sample project"))
+        .environment(ProjectStore.preview())
 }

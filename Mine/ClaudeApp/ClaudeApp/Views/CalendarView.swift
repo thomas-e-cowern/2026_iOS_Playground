@@ -291,5 +291,5 @@ struct CalendarTaskRow: View {
 
 #Preview {
     CalendarView()
-        .environment(ProjectStore())
+        .environment(ProjectStore.preview())
 }

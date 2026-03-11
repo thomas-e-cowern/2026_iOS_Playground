@@ -62,5 +62,5 @@ struct AddTaskView: View {
 
 #Preview {
     AddTaskView(projectID: UUID())
-        .environment(ProjectStore())
+        .environment(ProjectStore.preview())
 }

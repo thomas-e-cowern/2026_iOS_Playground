@@ -18,6 +18,10 @@ struct ContentView: View {
                 ProjectListView()
             }
 
+            Tab("Search", systemImage: "magnifyingglass") {
+                SearchView()
+            }
+
             Tab("Archive", systemImage: "archivebox") {
                 ArchiveView()
             }
@@ -27,5 +31,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environment(ProjectStore())
+        .environment(ProjectStore.preview())
 }
