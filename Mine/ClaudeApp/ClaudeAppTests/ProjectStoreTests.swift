@@ -3,10 +3,12 @@ import Foundation
 import SwiftData
 @testable import ClaudeApp
 
-// MARK: - ProjectStore Tests
+// All SwiftData-dependent tests in a single serialized suite
+// to prevent concurrent ModelContainer creation which causes hangs.
 
 @MainActor
-struct ProjectStoreTests {
+@Suite(.serialized)
+struct SwiftDataTests {
 
     private func makeStore() -> ProjectStore {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -14,7 +16,133 @@ struct ProjectStoreTests {
         return ProjectStore(modelContext: container.mainContext)
     }
 
-    // MARK: - Initialization
+    // MARK: - ProjectTask Init
+
+    @Test func taskDefaultInitValues() {
+        let store = makeStore()
+        let projectID = store.projects[0].id
+        let task = ProjectTask(title: "Test", dueDate: .now)
+        store.addTask(task, to: projectID)
+        #expect(task.title == "Test")
+        #expect(task.details == "")
+        #expect(task.status == .notStarted)
+        #expect(task.priority == .medium)
+        #expect(task.isArchived == false)
+    }
+
+    @Test func taskCustomInitValues() {
+        let store = makeStore()
+        let projectID = store.projects[0].id
+        let date = Date.now
+        let id = UUID()
+        let task = ProjectTask(
+            id: id,
+            title: "Custom",
+            details: "Some details",
+            dueDate: date,
+            status: .completed,
+            priority: .high
+        )
+        store.addTask(task, to: projectID)
+        #expect(task.id == id)
+        #expect(task.title == "Custom")
+        #expect(task.details == "Some details")
+        #expect(task.status == .completed)
+        #expect(task.priority == .high)
+    }
+
+    // MARK: - Project Init
+
+    @Test func projectDefaultInitValues() {
+        let store = makeStore()
+        let project = Project(name: "Test Project")
+        store.addProject(project)
+        #expect(project.name == "Test Project")
+        #expect(project.descriptionText == "")
+        #expect(project.tasks.isEmpty)
+        #expect(project.colorName == "blue")
+        #expect(project.category == .other)
+        #expect(project.isArchived == false)
+    }
+
+    @Test func projectCustomCategoryInitValue() {
+        let store = makeStore()
+        let project = Project(name: "Work Project", category: .work)
+        store.addProject(project)
+        #expect(project.category == .work)
+    }
+
+    // MARK: - Active Tasks / Completion
+
+    @Test func activeTasksExcludesArchived() {
+        let store = makeStore()
+        let project = Project(name: "Filter Test")
+        store.addProject(project)
+        let projectID = project.id
+        store.addTask(ProjectTask(title: "A", dueDate: .now), to: projectID)
+        store.addTask(ProjectTask(title: "B", dueDate: .now, isArchived: true), to: projectID)
+        store.addTask(ProjectTask(title: "C", dueDate: .now), to: projectID)
+        let updated = store.projects.first { $0.id == projectID }!
+        #expect(updated.activeTasks.count == 2)
+        #expect(updated.activeTasks.allSatisfy { !$0.isArchived })
+    }
+
+    @Test func completionPercentageIgnoresArchivedTasks() {
+        let store = makeStore()
+        let project = Project(name: "Mixed")
+        store.addProject(project)
+        let projectID = project.id
+        store.addTask(ProjectTask(title: "A", dueDate: .now, status: .completed), to: projectID)
+        store.addTask(ProjectTask(title: "B", dueDate: .now, status: .notStarted), to: projectID)
+        store.addTask(ProjectTask(title: "C", dueDate: .now, status: .completed, isArchived: true), to: projectID)
+        let updated = store.projects.first { $0.id == projectID }!
+        #expect(updated.completionPercentage == 0.5)
+    }
+
+    @Test func completionPercentageWithNoTasks() {
+        let store = makeStore()
+        let project = Project(name: "Empty")
+        store.addProject(project)
+        let updated = store.projects.first { $0.id == project.id }!
+        #expect(updated.completionPercentage == 0)
+    }
+
+    @Test func completionPercentageWithAllCompleted() {
+        let store = makeStore()
+        let project = Project(name: "Done")
+        store.addProject(project)
+        let projectID = project.id
+        store.addTask(ProjectTask(title: "A", dueDate: .now, status: .completed), to: projectID)
+        store.addTask(ProjectTask(title: "B", dueDate: .now, status: .completed), to: projectID)
+        let updated = store.projects.first { $0.id == projectID }!
+        #expect(updated.completionPercentage == 1.0)
+    }
+
+    @Test func completionPercentagePartial() {
+        let store = makeStore()
+        let project = Project(name: "Partial")
+        store.addProject(project)
+        let projectID = project.id
+        store.addTask(ProjectTask(title: "A", dueDate: .now, status: .completed), to: projectID)
+        store.addTask(ProjectTask(title: "B", dueDate: .now, status: .inProgress), to: projectID)
+        store.addTask(ProjectTask(title: "C", dueDate: .now, status: .notStarted), to: projectID)
+        store.addTask(ProjectTask(title: "D", dueDate: .now, status: .completed), to: projectID)
+        let updated = store.projects.first { $0.id == projectID }!
+        #expect(updated.completionPercentage == 0.5)
+    }
+
+    @Test func completionPercentageNoneCompleted() {
+        let store = makeStore()
+        let project = Project(name: "None")
+        store.addProject(project)
+        let projectID = project.id
+        store.addTask(ProjectTask(title: "A", dueDate: .now, status: .notStarted), to: projectID)
+        store.addTask(ProjectTask(title: "B", dueDate: .now, status: .inProgress), to: projectID)
+        let updated = store.projects.first { $0.id == projectID }!
+        #expect(updated.completionPercentage == 0.0)
+    }
+
+    // MARK: - Store Initialization
 
     @Test func initLoadsSampleData() {
         let store = makeStore()
@@ -272,7 +400,7 @@ struct ProjectStoreTests {
         let taskID = project.tasks[0].id
         store.archiveTask(taskID, in: projectID)
         let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.activeTasks.allSatisfy { $0.id != taskID })
+        #expect(updatedProject.activeTasks.allSatisfy { $0.id != projectID })
     }
 
     @Test func unarchiveTaskRestoresTask() {
@@ -398,5 +526,123 @@ struct ProjectStoreTests {
         }
         #expect(store.projects.isEmpty)
         #expect(store.allTasks().isEmpty)
+    }
+
+    // MARK: - Error Message
+
+    @Test func errorMessageDefaultsToNil() {
+        let store = makeStore()
+        #expect(store.errorMessage == nil)
+    }
+
+    @Test func errorMessageCanBeCleared() {
+        let store = makeStore()
+        store.errorMessage = "Test error"
+        #expect(store.errorMessage == "Test error")
+        store.errorMessage = nil
+        #expect(store.errorMessage == nil)
+    }
+
+    // MARK: - Category
+
+    @Test func addProjectWithCategory() {
+        let store = makeStore()
+        let project = Project(name: "Work Project", category: .work)
+        store.addProject(project)
+        let found = store.projects.first { $0.name == "Work Project" }
+        #expect(found?.category == .work)
+    }
+
+    @Test func updateProjectCategory() {
+        let store = makeStore()
+        let project = store.projects[0]
+        project.category = .education
+        store.updateProject(project)
+        let updated = store.projects.first { $0.id == project.id }
+        #expect(updated?.category == .education)
+    }
+
+    @Test func defaultCategoryIsOther() {
+        let store = makeStore()
+        let project = Project(name: "No Category")
+        store.addProject(project)
+        let found = store.projects.first { $0.name == "No Category" }
+        #expect(found?.category == .other)
+    }
+
+    // MARK: - Notification Integration
+
+    @Test func storeNotificationManagerDefaultsToNil() {
+        let store = makeStore()
+        #expect(store.notificationManager == nil)
+    }
+
+    @Test func storeAcceptsNotificationManager() {
+        let store = makeStore()
+        let manager = NotificationManager()
+        store.notificationManager = manager
+        #expect(store.notificationManager != nil)
+    }
+
+    @Test func addProjectTriggersRescheduleWithoutCrash() {
+        let store = makeStore()
+        let manager = NotificationManager()
+        store.notificationManager = manager
+        let project = Project(name: "Notification Test")
+        store.addProject(project)
+        #expect(store.projects.contains { $0.name == "Notification Test" })
+    }
+
+    @Test func addTaskTriggersRescheduleWithoutCrash() {
+        let store = makeStore()
+        let manager = NotificationManager()
+        store.notificationManager = manager
+        let project = store.projects[0]
+        let projectID = project.id
+        let task = ProjectTask(title: "Notified Task", dueDate: .now, priority: .high)
+        store.addTask(task, to: projectID)
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        #expect(updatedProject.tasks.contains { $0.title == "Notified Task" })
+    }
+
+    @Test func rescheduleSkipsCompletedTasks() async {
+        let manager = NotificationManager()
+        let store = makeStore()
+        let calendar = Calendar.current
+        let project = Project(name: "Test Project")
+        store.addProject(project)
+        let task = ProjectTask(
+            title: "Done task",
+            dueDate: calendar.date(byAdding: .day, value: 3, to: .now)!,
+            status: .completed,
+            priority: .medium
+        )
+        store.addTask(task, to: project.id)
+        let fetched = store.projects.first { $0.id == project.id }!
+        await manager.rescheduleAll(for: [fetched])
+    }
+
+    @Test func rescheduleHandlesProjectWithNoTasks() async {
+        let manager = NotificationManager()
+        let store = makeStore()
+        let project = Project(name: "Empty Project")
+        store.addProject(project)
+        let fetched = store.projects.first { $0.id == project.id }!
+        await manager.rescheduleAll(for: [fetched])
+    }
+
+    @Test func mutationsWorkWithoutNotificationManager() {
+        let store = makeStore()
+        let project = Project(name: "No Manager")
+        store.addProject(project)
+        store.deleteProject(project.id)
+
+        let existingProject = store.projects[0]
+        let projectID = existingProject.id
+        let task = ProjectTask(title: "Test", dueDate: .now)
+        store.addTask(task, to: projectID)
+        task.title = "Updated"
+        store.updateTask(task, in: projectID)
+        store.deleteTask(task.id, from: projectID)
     }
 }

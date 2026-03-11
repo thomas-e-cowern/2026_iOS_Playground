@@ -1,16 +1,6 @@
 import Testing
 import Foundation
-import SwiftData
 @testable import ClaudeApp
-
-// MARK: - Test Helpers
-
-@MainActor
-private func makeContext() -> ModelContext {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
-    return container.mainContext
-}
 
 // MARK: - TaskStatus Tests
 
@@ -69,124 +59,29 @@ struct TaskPriorityTests {
     }
 }
 
-// MARK: - ProjectTask Tests
+// MARK: - ProjectCategory Tests
 
-@MainActor
-struct ProjectTaskTests {
+struct ProjectCategoryTests {
 
-    @Test func defaultInitValues() {
-        let context = makeContext()
-        let task = ProjectTask(title: "Test", dueDate: .now)
-        context.insert(task)
-        #expect(task.title == "Test")
-        #expect(task.details == "")
-        #expect(task.status == .notStarted)
-        #expect(task.priority == .medium)
-        #expect(task.isArchived == false)
+    @Test func rawValues() {
+        #expect(ProjectCategory.work.rawValue == "Work")
+        #expect(ProjectCategory.personal.rawValue == "Personal")
+        #expect(ProjectCategory.education.rawValue == "Education")
+        #expect(ProjectCategory.health.rawValue == "Health")
+        #expect(ProjectCategory.finance.rawValue == "Finance")
+        #expect(ProjectCategory.other.rawValue == "Other")
     }
 
-    @Test func customInitValues() {
-        let context = makeContext()
-        let date = Date.now
-        let id = UUID()
-        let task = ProjectTask(
-            id: id,
-            title: "Custom",
-            details: "Some details",
-            dueDate: date,
-            status: .completed,
-            priority: .high
-        )
-        context.insert(task)
-        #expect(task.id == id)
-        #expect(task.title == "Custom")
-        #expect(task.details == "Some details")
-        #expect(task.dueDate == date)
-        #expect(task.status == .completed)
-        #expect(task.priority == .high)
-    }
-}
-
-// MARK: - Project Tests
-
-@MainActor
-struct ProjectTests {
-
-    @Test func defaultInitValues() {
-        let context = makeContext()
-        let project = Project(name: "Test Project")
-        context.insert(project)
-        #expect(project.name == "Test Project")
-        #expect(project.descriptionText == "")
-        #expect(project.tasks.isEmpty)
-        #expect(project.colorName == "blue")
-        #expect(project.isArchived == false)
+    @Test func icons() {
+        #expect(ProjectCategory.work.icon == "briefcase.fill")
+        #expect(ProjectCategory.personal.icon == "person.fill")
+        #expect(ProjectCategory.education.icon == "book.fill")
+        #expect(ProjectCategory.health.icon == "heart.fill")
+        #expect(ProjectCategory.finance.icon == "dollarsign.circle.fill")
+        #expect(ProjectCategory.other.icon == "folder.fill")
     }
 
-    @Test func activeTasksExcludesArchived() {
-        let context = makeContext()
-        let tasks = [
-            ProjectTask(title: "A", dueDate: .now),
-            ProjectTask(title: "B", dueDate: .now, isArchived: true),
-            ProjectTask(title: "C", dueDate: .now),
-        ]
-        let project = Project(name: "Filter Test", tasks: tasks)
-        context.insert(project)
-        #expect(project.activeTasks.count == 2)
-        #expect(project.activeTasks.allSatisfy { !$0.isArchived })
-    }
-
-    @Test func completionPercentageIgnoresArchivedTasks() {
-        let context = makeContext()
-        let tasks = [
-            ProjectTask(title: "A", dueDate: .now, status: .completed),
-            ProjectTask(title: "B", dueDate: .now, status: .notStarted),
-            ProjectTask(title: "C", dueDate: .now, status: .completed, isArchived: true),
-        ]
-        let project = Project(name: "Mixed", tasks: tasks)
-        context.insert(project)
-        #expect(project.completionPercentage == 0.5)
-    }
-
-    @Test func completionPercentageWithNoTasks() {
-        let context = makeContext()
-        let project = Project(name: "Empty")
-        context.insert(project)
-        #expect(project.completionPercentage == 0)
-    }
-
-    @Test func completionPercentageWithAllCompleted() {
-        let context = makeContext()
-        let tasks = [
-            ProjectTask(title: "A", dueDate: .now, status: .completed),
-            ProjectTask(title: "B", dueDate: .now, status: .completed),
-        ]
-        let project = Project(name: "Done", tasks: tasks)
-        context.insert(project)
-        #expect(project.completionPercentage == 1.0)
-    }
-
-    @Test func completionPercentagePartial() {
-        let context = makeContext()
-        let tasks = [
-            ProjectTask(title: "A", dueDate: .now, status: .completed),
-            ProjectTask(title: "B", dueDate: .now, status: .inProgress),
-            ProjectTask(title: "C", dueDate: .now, status: .notStarted),
-            ProjectTask(title: "D", dueDate: .now, status: .completed),
-        ]
-        let project = Project(name: "Partial", tasks: tasks)
-        context.insert(project)
-        #expect(project.completionPercentage == 0.5)
-    }
-
-    @Test func completionPercentageNoneCompleted() {
-        let context = makeContext()
-        let tasks = [
-            ProjectTask(title: "A", dueDate: .now, status: .notStarted),
-            ProjectTask(title: "B", dueDate: .now, status: .inProgress),
-        ]
-        let project = Project(name: "None", tasks: tasks)
-        context.insert(project)
-        #expect(project.completionPercentage == 0.0)
+    @Test func allCasesContainsAllCategories() {
+        #expect(ProjectCategory.allCases.count == 6)
     }
 }
