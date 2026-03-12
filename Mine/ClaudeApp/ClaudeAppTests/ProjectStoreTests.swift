@@ -3,17 +3,25 @@ import Foundation
 import SwiftData
 @testable import ClaudeApp
 
-// All SwiftData-dependent tests in a single serialized suite
-// to prevent concurrent ModelContainer creation which causes hangs.
+// Single shared container to prevent "model instance was destroyed" errors
+// caused by creating multiple ModelContainers for the same schema.
+private let _testContainer: ModelContainer = {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    return try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+}()
 
+// All SwiftData-dependent tests in a single serialized suite.
 @MainActor
 @Suite(.serialized)
 struct SwiftDataTests {
 
     private func makeStore() -> ProjectStore {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
-        return ProjectStore(modelContext: container.mainContext)
+        // Clear all existing data so each test starts fresh
+        let context = _testContainer.mainContext
+        try? context.delete(model: ProjectTask.self)
+        try? context.delete(model: Project.self)
+        try? context.save()
+        return ProjectStore(modelContext: context)
     }
 
     // MARK: - ProjectTask Init
