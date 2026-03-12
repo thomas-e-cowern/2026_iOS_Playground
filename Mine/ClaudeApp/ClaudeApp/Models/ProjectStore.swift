@@ -153,6 +153,20 @@ class ProjectStore {
         return results
     }
 
+    func overdueTasks() -> [(project: Project, task: ProjectTask)] {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: .now)
+        var results: [(project: Project, task: ProjectTask)] = []
+        for project in activeProjects {
+            for task in project.activeTasks {
+                if task.status != .completed && task.dueDate < startOfToday {
+                    results.append((project: project, task: task))
+                }
+            }
+        }
+        return results.sorted { $0.task.dueDate < $1.task.dueDate }
+    }
+
     func allTasks() -> [(project: Project, task: ProjectTask)] {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in activeProjects {
