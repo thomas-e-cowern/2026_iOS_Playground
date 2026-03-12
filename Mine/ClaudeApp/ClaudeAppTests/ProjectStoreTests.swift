@@ -250,6 +250,50 @@ struct SwiftDataTests {
         #expect(updatedTask?.title == "Updated Title")
     }
 
+    @Test func editTaskChangesAllFields() {
+        let store = makeStore()
+        let project = store.projects[0]
+        let projectID = project.id
+        let task = project.tasks[0]
+        let taskID = task.id
+
+        // Simulate EditTaskView: copy values, modify, write back, then update
+        task.title = "Edited Title"
+        task.details = "Edited details"
+        task.priority = .low
+        task.status = .completed
+        let newDate = Calendar.current.date(byAdding: .day, value: 30, to: .now)!
+        task.dueDate = newDate
+        store.updateTask(task, in: projectID)
+
+        // Re-fetch from store (simulates what the view sees after refresh)
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let updatedTask = updatedProject.tasks.first { $0.id == taskID }
+        #expect(updatedTask?.title == "Edited Title")
+        #expect(updatedTask?.details == "Edited details")
+        #expect(updatedTask?.priority == .low)
+        #expect(updatedTask?.status == .completed)
+        #expect(Calendar.current.isDate(updatedTask!.dueDate, inSameDayAs: newDate))
+    }
+
+    @Test func editTaskPersistsAfterRefetch() {
+        let store = makeStore()
+        let project = store.projects[0]
+        let projectID = project.id
+        let task = project.tasks[0]
+        let taskID = task.id
+
+        task.title = "Persisted Edit"
+        store.updateTask(task, in: projectID)
+
+        // Fetch the task by looking it up via its UUID in the refreshed store
+        let refetchedTask = store.projects
+            .first { $0.id == projectID }?
+            .tasks.first { $0.id == taskID }
+        #expect(refetchedTask != nil)
+        #expect(refetchedTask?.title == "Persisted Edit")
+    }
+
     // MARK: - Delete Task
 
     @Test func deleteTaskRemovesFromProject() {
@@ -279,6 +323,101 @@ struct SwiftDataTests {
         store.deleteTask(UUID(), from: projectID)
         let updatedProject = store.projects.first { $0.id == projectID }!
         #expect(updatedProject.tasks.count == initialCount)
+    }
+
+    // MARK: - Overdue Tasks
+
+    @Test func overdueTasksReturnsTasksBeforeToday() {
+        let store = makeStore()
+        let calendar = Calendar.current
+        let project = Project(name: "Overdue Test")
+        store.addProject(project)
+        let projectID = project.id
+        let pastTask = ProjectTask(
+            title: "Past Task",
+            dueDate: calendar.date(byAdding: .day, value: -3, to: .now)!,
+            status: .notStarted
+        )
+        store.addTask(pastTask, to: projectID)
+        let overdue = store.overdueTasks()
+        #expect(overdue.contains { $0.task.title == "Past Task" })
+    }
+
+    @Test func overdueTasksExcludesCompletedTasks() {
+        let store = makeStore()
+        let calendar = Calendar.current
+        let project = Project(name: "Done Test")
+        store.addProject(project)
+        let projectID = project.id
+        let doneTask = ProjectTask(
+            title: "Done Past Task",
+            dueDate: calendar.date(byAdding: .day, value: -2, to: .now)!,
+            status: .completed
+        )
+        store.addTask(doneTask, to: projectID)
+        let overdue = store.overdueTasks()
+        #expect(overdue.allSatisfy { $0.task.title != "Done Past Task" })
+    }
+
+    @Test func overdueTasksExcludesFutureTasks() {
+        let store = makeStore()
+        let calendar = Calendar.current
+        let project = Project(name: "Future Test")
+        store.addProject(project)
+        let projectID = project.id
+        let futureTask = ProjectTask(
+            title: "Future Task",
+            dueDate: calendar.date(byAdding: .day, value: 5, to: .now)!,
+            status: .notStarted
+        )
+        store.addTask(futureTask, to: projectID)
+        let overdue = store.overdueTasks()
+        #expect(overdue.allSatisfy { $0.task.title != "Future Task" })
+    }
+
+    @Test func overdueTasksExcludesArchivedProjects() {
+        let store = makeStore()
+        let calendar = Calendar.current
+        let project = Project(name: "Archived Overdue")
+        store.addProject(project)
+        let projectID = project.id
+        let pastTask = ProjectTask(
+            title: "Archived Past",
+            dueDate: calendar.date(byAdding: .day, value: -1, to: .now)!,
+            status: .notStarted
+        )
+        store.addTask(pastTask, to: projectID)
+        store.archiveProject(projectID)
+        let overdue = store.overdueTasks()
+        #expect(overdue.allSatisfy { $0.task.title != "Archived Past" })
+    }
+
+    @Test func overdueTasksSortedByDueDate() {
+        let store = makeStore()
+        let calendar = Calendar.current
+        // Delete sample data projects to isolate this test
+        let ids = store.projects.map(\.id)
+        for id in ids { store.deleteProject(id) }
+
+        let project = Project(name: "Sort Test")
+        store.addProject(project)
+        let projectID = project.id
+        let older = ProjectTask(
+            title: "Older",
+            dueDate: calendar.date(byAdding: .day, value: -5, to: .now)!,
+            status: .inProgress
+        )
+        let newer = ProjectTask(
+            title: "Newer",
+            dueDate: calendar.date(byAdding: .day, value: -1, to: .now)!,
+            status: .notStarted
+        )
+        store.addTask(newer, to: projectID)
+        store.addTask(older, to: projectID)
+        let overdue = store.overdueTasks()
+        #expect(overdue.count == 2)
+        #expect(overdue[0].task.title == "Older")
+        #expect(overdue[1].task.title == "Newer")
     }
 
     // MARK: - Calendar Helpers
