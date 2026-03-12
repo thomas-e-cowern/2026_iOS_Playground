@@ -159,12 +159,38 @@ struct CalendarView: View {
                 }
             }
         } else {
-            ContentUnavailableView {
-                Label("Select a Day", systemImage: "calendar")
-            } description: {
-                Text("Tap a date to see scheduled tasks.")
+            let overdue = store.overdueTasks()
+            VStack(alignment: .leading, spacing: 8) {
+                if overdue.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Overdue Tasks", systemImage: "checkmark.circle")
+                    } description: {
+                        Text("You're all caught up! Tap a date to see scheduled tasks.")
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    HStack {
+                        Label("Overdue", systemImage: "exclamationmark.triangle.fill")
+                            .font(.headline)
+                            .foregroundStyle(.red)
+                        Spacer()
+                        Text("\(overdue.count) task\(overdue.count == 1 ? "" : "s")")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 12)
+
+                    List {
+                        ForEach(overdue, id: \.task.id) { item in
+                            NavigationLink(value: item.project.id) {
+                                CalendarTaskRow(project: item.project, task: item.task)
+                            }
+                        }
+                    }
+                    .listStyle(.plain)
+                }
             }
-            .frame(maxHeight: .infinity)
         }
     }
 
