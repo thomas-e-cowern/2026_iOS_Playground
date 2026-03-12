@@ -5,7 +5,7 @@ struct ProjectDetailView: View {
     let project: Project
     @State private var showAddTask = false
     @State private var showEditProject = false
-    @State private var taskToEdit: ProjectTask?
+    @State private var editingTaskID: UUID?
     @State private var taskToDelete: ProjectTask?
 
     private var currentProject: Project {
@@ -51,8 +51,14 @@ struct ProjectDetailView: View {
         .sheet(isPresented: $showEditProject) {
             EditProjectView(project: currentProject)
         }
-        .sheet(item: $taskToEdit) { task in
-            EditTaskView(task: task, projectID: project.id)
+        .sheet(isPresented: Binding(
+            get: { editingTaskID != nil },
+            set: { if !$0 { editingTaskID = nil } }
+        )) {
+            if let taskID = editingTaskID,
+               let task = currentProject.tasks.first(where: { $0.id == taskID }) {
+                EditTaskView(task: task, projectID: project.id)
+            }
         }
         .alert("Delete Task", isPresented: Binding(
             get: { taskToDelete != nil },
@@ -164,7 +170,7 @@ struct ProjectDetailView: View {
                         }
                         .swipeActions(edge: .leading) {
                             Button {
-                                taskToEdit = task
+                                editingTaskID = task.id
                             } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
