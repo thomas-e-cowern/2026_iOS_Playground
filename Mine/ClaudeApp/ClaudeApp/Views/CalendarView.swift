@@ -36,6 +36,7 @@ struct CalendarView: View {
                 Image(systemName: "chevron.left")
                     .font(.title3)
             }
+            .accessibilityLabel("Previous month")
 
             Spacer()
 
@@ -50,6 +51,7 @@ struct CalendarView: View {
                 Image(systemName: "chevron.right")
                     .font(.title3)
             }
+            .accessibilityLabel("Next month")
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
@@ -126,6 +128,9 @@ struct CalendarView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(dayCellAccessibilityLabel(date: date, isToday: isToday, taskCount: tasksForDay.count))
+        .accessibilityHint(isSelected ? "Currently selected" : "Double tap to view tasks")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Task List for Selected Date
@@ -180,6 +185,8 @@ struct CalendarView: View {
                     }
                     .padding(.horizontal)
                     .padding(.top, 12)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(overdue.count) overdue task\(overdue.count == 1 ? "" : "s")")
 
                     List {
                         ForEach(overdue, id: \.task.id) { item in
@@ -237,6 +244,17 @@ struct CalendarView: View {
         return days
     }
 
+    private func dayCellAccessibilityLabel(date: Date, isToday: Bool, taskCount: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        var label = formatter.string(from: date)
+        if isToday { label += ", today" }
+        if taskCount > 0 {
+            label += ", \(taskCount) task\(taskCount == 1 ? "" : "s")"
+        }
+        return label
+    }
+
     private func projectColor(_ name: String) -> Color {
         switch name {
         case "blue": return .blue
@@ -259,10 +277,12 @@ struct CalendarTaskRow: View {
             RoundedRectangle(cornerRadius: 3)
                 .fill(color(for: project.colorName))
                 .frame(width: 4, height: 40)
+                .accessibilityHidden(true)
 
             Image(systemName: task.status.icon)
                 .foregroundStyle(statusColor)
                 .font(.title3)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
@@ -284,6 +304,8 @@ struct CalendarTaskRow: View {
                 .foregroundStyle(priorityColor)
                 .clipShape(Capsule())
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(task.title), \(project.name), \(task.status.rawValue), \(task.priority.rawValue) priority")
     }
 
     private var statusColor: Color {

@@ -1,9 +1,11 @@
 import SwiftUI
+import TipKit
 
 struct SearchView: View {
     @Environment(ProjectStore.self) private var store
     @State private var searchText = ""
     @State private var priorityFilter: TaskPriority?
+    private var searchFilterTip = SearchFilterTip()
 
     private var isFiltering: Bool {
         !searchText.isEmpty || priorityFilter != nil
@@ -97,6 +99,7 @@ struct SearchView: View {
                         ForEach(TaskPriority.allCases, id: \.self) { priority in
                             Button {
                                 priorityFilter = priority
+                                searchFilterTip.invalidate(reason: .actionPerformed)
                             } label: {
                                 if priorityFilter == priority {
                                     Label(priority.rawValue, systemImage: "checkmark")
@@ -108,6 +111,9 @@ struct SearchView: View {
                     } label: {
                         Image(systemName: priorityFilter != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                     }
+                    .popoverTip(searchFilterTip)
+                    .accessibilityLabel(priorityFilter != nil ? "Filter: \(priorityFilter!.rawValue)" : "Filter by priority")
+                    .accessibilityHint("Double tap to change priority filter")
                 }
             }
         }
@@ -125,6 +131,7 @@ struct SearchTaskRow: View {
             Image(systemName: task.status.icon)
                 .foregroundStyle(statusColor)
                 .font(.title3)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
@@ -152,6 +159,8 @@ struct SearchTaskRow: View {
             Spacer()
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(task.title), \(projectName), \(task.status.rawValue), \(task.priority.rawValue) priority")
     }
 
     private var statusColor: Color {

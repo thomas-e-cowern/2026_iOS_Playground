@@ -61,6 +61,7 @@ struct ProjectListView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add project")
                 }
             }
             .sheet(isPresented: $showAddProject) {
@@ -97,6 +98,7 @@ struct ProjectRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(color(for: project.colorName))
                 .frame(width: 6, height: 50)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(project.name)
@@ -118,6 +120,7 @@ struct ProjectRow: View {
 
                     ProgressView(value: project.completionPercentage)
                         .frame(width: 60)
+                        .accessibilityHidden(true)
 
                     Text("\(Int(project.completionPercentage * 100))%")
                         .font(.caption2.weight(.medium))
@@ -126,6 +129,8 @@ struct ProjectRow: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(project.name), \(project.category.rawValue), \(project.tasks.count) tasks, \(Int(project.completionPercentage * 100)) percent complete")
     }
 
     private func color(for name: String) -> Color {

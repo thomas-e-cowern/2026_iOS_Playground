@@ -7,26 +7,35 @@
 
 import SwiftUI
 
+    enum AppTab: String {
+        case calendar, projects, search, archive
+    }
+
 struct ContentView: View {
     @Environment(ProjectStore.self) private var store
+    @Environment(QuickActionState.self) private var quickActionState
+    @State private var showQuickAddProject = false
+    @State private var showQuickAddTask = false
+    @State private var quickAddTaskProjectID: UUID?
+    @State private var selectedTab: AppTab = .calendar
 
     var body: some View {
         @Bindable var store = store
 
-        TabView {
-            Tab("Calendar", systemImage: "calendar") {
+        TabView(selection: $selectedTab) {
+            Tab("Calendar", systemImage: "calendar", value: AppTab.calendar) {
                 CalendarView()
             }
 
-            Tab("Projects", systemImage: "folder.fill") {
+            Tab("Projects", systemImage: "folder.fill", value: AppTab.projects) {
                 ProjectListView()
             }
 
-            Tab("Search", systemImage: "magnifyingglass") {
+            Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
                 SearchView()
             }
 
-            Tab("Archive", systemImage: "archivebox") {
+            Tab("Archive", systemImage: "archivebox", value: AppTab.archive) {
                 ArchiveView()
             }
         }
@@ -40,10 +49,49 @@ struct ContentView: View {
         } message: {
             Text(store.errorMessage ?? "")
         }
+        .sheet(isPresented: $showQuickAddProject) {
+            AddProjectView()
+        }
+        .sheet(isPresented: $showQuickAddTask) {
+            if let projectID = quickAddTaskProjectID {
+                AddTaskView(projectID: projectID)
+            }
+        }
+        .onChange(of: quickActionState.pendingAction) {
+            handleQuickAction()
+        }
+        .onAppear {
+            handleQuickAction()
+        }
+    }
+
+    private func handleQuickAction() {
+        guard let action = quickActionState.pendingAction else { return }
+        quickActionState.pendingAction = nil
+
+        switch action {
+        case "com.claudeapp.newProject":
+            selectedTab = .projects
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showQuickAddProject = true
+            }
+        case "com.claudeapp.addTask":
+            if let projectID = quickActionState.pendingProjectID {
+                quickActionState.pendingProjectID = nil
+                quickAddTaskProjectID = projectID
+                selectedTab = .projects
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showQuickAddTask = true
+                }
+            }
+        default:
+            break
+        }
     }
 }
 
 #Preview {
     ContentView()
         .environment(ProjectStore.preview())
+        .environment(QuickActionState())
 }

@@ -19,6 +19,8 @@ struct ArchiveView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding()
+                .accessibilityLabel("Archive section")
+                .accessibilityHint("Switch between archived and completed items")
 
                 Group {
                     switch selectedSection {
@@ -174,6 +176,7 @@ struct ArchivedProjectRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(color(for: project.colorName))
                 .frame(width: 6, height: 50)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(project.name)
@@ -214,6 +217,8 @@ struct ArchivedProjectRow: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(project.name), \(project.tasks.count) tasks\(project.isArchived ? ", archived" : "")\(project.completionPercentage == 1.0 ? ", complete" : "")")
     }
 
     private func color(for name: String) -> Color {
@@ -238,6 +243,7 @@ struct ArchivedTaskRow: View {
             Image(systemName: task.status.icon)
                 .foregroundStyle(statusColor)
                 .font(.title3)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
@@ -272,6 +278,8 @@ struct ArchivedTaskRow: View {
             Spacer()
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(task.title), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.isArchived ? ", archived" : "")")
     }
 
     private var statusColor: Color {

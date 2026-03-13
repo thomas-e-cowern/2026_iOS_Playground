@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 struct ProjectDetailView: View {
     @Environment(ProjectStore.self) private var store
@@ -40,9 +41,18 @@ struct ProjectDetailView: View {
                     } label: {
                         Label("Archive Project", systemImage: "archivebox")
                     }
+
+                    Divider()
+
+                    Button {
+                        exportPDF()
+                    } label: {
+                        Label("Export as PDF", systemImage: "arrow.up.doc")
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Project actions")
             }
         }
         .sheet(isPresented: $showAddTask) {
@@ -76,6 +86,7 @@ struct ProjectDetailView: View {
         } message: {
             Text("Are you sure you want to permanently delete this task?")
         }
+
     }
 
     // MARK: - Project Info
@@ -117,6 +128,8 @@ struct ProjectDetailView: View {
 
                 ProgressView(value: currentProject.completionPercentage)
                     .tint(color(for: currentProject.colorName))
+                    .accessibilityLabel("Completion progress")
+                    .accessibilityValue("\(Int(currentProject.completionPercentage * 100)) percent")
 
                 HStack(spacing: 16) {
                     statusBadge(count: notStartedCount, label: "To Do", color: .gray)
@@ -139,12 +152,15 @@ struct ProjectDetailView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(count) \(label)")
     }
 
     // MARK: - Tasks
 
     private var tasksSection: some View {
-        Section("Tasks") {
+        let swipeTip = SwipeTaskTip()
+        return Section("Tasks") {
             if currentProject.activeTasks.isEmpty {
                 ContentUnavailableView {
                     Label("No Tasks", systemImage: "checklist")
@@ -152,17 +168,20 @@ struct ProjectDetailView: View {
                     Text("Tap the menu to add tasks to this project.")
                 }
             } else {
+                TipView(swipeTip)
                 ForEach(sortedTasks) { task in
                     TaskRow(task: task, projectID: project.id)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 taskToDelete = task
+                                swipeTip.invalidate(reason: .actionPerformed)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
 
                             Button {
                                 store.archiveTask(task.id, in: project.id)
+                                swipeTip.invalidate(reason: .actionPerformed)
                             } label: {
                                 Label("Archive", systemImage: "archivebox")
                             }
@@ -171,6 +190,7 @@ struct ProjectDetailView: View {
                         .swipeActions(edge: .leading) {
                             Button {
                                 editingTaskID = task.id
+                                swipeTip.invalidate(reason: .actionPerformed)
                             } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
@@ -204,6 +224,25 @@ struct ProjectDetailView: View {
         currentProject.activeTasks.filter { $0.status == .notStarted }.count
     }
 
+    private func exportPDF() {
+        let info = PDFProjectInfo(from: currentProject)
+        let generator = PDFGenerator()
+        let data = generator.generatePDF(for: info)
+        let itemSource = PDFActivityItemSource(data: data, projectName: currentProject.name)
+
+        let activityVC = UIActivityViewController(activityItems: [itemSource], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.keyWindow?.rootViewController {
+            var presenter = rootVC
+            while let presented = presenter.presentedViewController {
+                presenter = presented
+            }
+            activityVC.popoverPresentationController?.sourceView = presenter.view
+            activityVC.popoverPresentationController?.sourceRect = CGRect(x: presenter.view.bounds.midX, y: 0, width: 0, height: 0)
+            presenter.present(activityVC, animated: true)
+        }
+    }
+
     private func color(for name: String) -> Color {
         switch name {
         case "blue": return .blue
@@ -223,15 +262,20 @@ struct TaskRow: View {
     let projectID: UUID
 
     var body: some View {
+        let statusTip = TapStatusTip()
         HStack(spacing: 12) {
             Button {
                 cycleStatus()
+                statusTip.invalidate(reason: .actionPerformed)
             } label: {
                 Image(systemName: task.status.icon)
                     .foregroundStyle(statusColor)
                     .font(.title3)
             }
             .buttonStyle(.plain)
+            .popoverTip(statusTip)
+            .accessibilityLabel("Status: \(task.status.rawValue)")
+            .accessibilityHint("Double tap to change status")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
@@ -256,6 +300,7 @@ struct TaskRow: View {
             Spacer()
         }
         .padding(.vertical, 2)
+        .accessibilityLabel("\(task.title), \(task.status.rawValue), \(task.priority.rawValue) priority\(isDueSoon ? ", due soon" : "")")
     }
 
     private func cycleStatus() {

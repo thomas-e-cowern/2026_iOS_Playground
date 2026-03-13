@@ -145,7 +145,7 @@ class ProjectStore {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in activeProjects {
             for task in project.activeTasks {
-                if calendar.isDate(task.dueDate, inSameDayAs: date) {
+                if calendar.isDate(task.dueDate, inSameDayAs: date) && task.status != .completed {
                     results.append((project: project, task: task))
                 }
             }

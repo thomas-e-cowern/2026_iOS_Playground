@@ -427,7 +427,8 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
         let results = store.tasks(for: tomorrow)
-        #expect(results.contains { $0.task.title == "Create wireframes" })
+//        #expect(results.contains { $0.task.title == "Design system setup" })
+        #expect(!results.contains { $0.task.title == "Create wireframes" })
     }
 
     @Test func tasksForDateWithNoTasksReturnsEmpty() {
