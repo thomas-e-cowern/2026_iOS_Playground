@@ -12,6 +12,7 @@ struct EditTaskView: View {
     @State private var dueDate: Date
     @State private var priority: TaskPriority
     @State private var status: TaskStatus
+    @State private var recurrenceRule: RecurrenceRule
 
     init(task: ProjectTask, projectID: UUID) {
         self.task = task
@@ -21,6 +22,7 @@ struct EditTaskView: View {
         _dueDate = State(initialValue: task.dueDate)
         _priority = State(initialValue: task.priority)
         _status = State(initialValue: task.status)
+        _recurrenceRule = State(initialValue: task.recurrenceRule)
     }
 
     var body: some View {
@@ -52,6 +54,14 @@ struct EditTaskView: View {
                         }
                     }
                 }
+
+                Section("Recurrence") {
+                    Picker("Repeat", selection: $recurrenceRule) {
+                        ForEach(RecurrenceRule.allCases, id: \.self) { rule in
+                            Text(rule.rawValue).tag(rule)
+                        }
+                    }
+                }
             }
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
@@ -70,6 +80,7 @@ struct EditTaskView: View {
                         updated.dueDate = dueDate
                         updated.priority = priority
                         updated.status = status
+                        updated.recurrenceRule = recurrenceRule
                         store.updateTask(updated, in: projectID)
                         dismiss()
                     }

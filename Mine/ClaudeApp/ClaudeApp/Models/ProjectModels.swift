@@ -41,6 +41,27 @@ enum TaskPriority: String, Codable, CaseIterable, Comparable {
     }
 }
 
+enum RecurrenceRule: String, Codable, CaseIterable {
+    case none = "None"
+    case daily = "Daily"
+    case weekly = "Weekly"
+    case biweekly = "Biweekly"
+    case monthly = "Monthly"
+    case yearly = "Yearly"
+
+    func nextDueDate(from date: Date) -> Date? {
+        let calendar = Calendar.current
+        switch self {
+        case .none: return nil
+        case .daily: return calendar.date(byAdding: .day, value: 1, to: date)
+        case .weekly: return calendar.date(byAdding: .weekOfYear, value: 1, to: date)
+        case .biweekly: return calendar.date(byAdding: .weekOfYear, value: 2, to: date)
+        case .monthly: return calendar.date(byAdding: .month, value: 1, to: date)
+        case .yearly: return calendar.date(byAdding: .year, value: 1, to: date)
+        }
+    }
+}
+
 enum ProjectCategory: String, Codable, CaseIterable {
     case work = "Work"
     case personal = "Personal"
@@ -70,6 +91,8 @@ class ProjectTask {
     var status: TaskStatus
     var priority: TaskPriority
     var isArchived: Bool
+    var recurrenceRule: RecurrenceRule
+    var hasGeneratedNextOccurrence: Bool
     var project: Project?
 
     init(
@@ -79,7 +102,8 @@ class ProjectTask {
         dueDate: Date,
         status: TaskStatus = .notStarted,
         priority: TaskPriority = .medium,
-        isArchived: Bool = false
+        isArchived: Bool = false,
+        recurrenceRule: RecurrenceRule = .none
     ) {
         self.id = id
         self.title = title
@@ -88,6 +112,8 @@ class ProjectTask {
         self.status = status
         self.priority = priority
         self.isArchived = isArchived
+        self.recurrenceRule = recurrenceRule
+        self.hasGeneratedNextOccurrence = false
     }
 }
 

@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4D361A712F65A40F003F56C6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D361A702F65A40F003F56C6 /* WidgetKit.framework */; };
+		4D361A732F65A40F003F56C6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D361A722F65A40F003F56C6 /* SwiftUI.framework */; };
+		4D361A802F65A410003F56C6 /* OverdueTasksWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4D361A6E2F65A40F003F56C6 /* OverdueTasksWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4D2CF15C2F607BB300341A4B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -14,22 +20,77 @@
 			remoteGlobalIDString = 4D25A76D2F6074BB00E97C2D;
 			remoteInfo = ClaudeApp;
 		};
+		4D361A7E2F65A410003F56C6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4D25A7662F6074BB00E97C2D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4D361A6D2F65A40F003F56C6;
+			remoteInfo = OverdueTasksWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		4D361A852F65A410003F56C6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4D361A802F65A410003F56C6 /* OverdueTasksWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		4D25A76E2F6074BB00E97C2D /* ClaudeApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4D2CF1582F607BB300341A4B /* ClaudeAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClaudeAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D25A76E2F6074BB00E97C2D /* ProjectSimple.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProjectSimple.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D2CF1582F607BB300341A4B /* ProjectSimpleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ProjectSimpleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D361A6E2F65A40F003F56C6 /* OverdueTasksWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OverdueTasksWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D361A702F65A40F003F56C6 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4D361A722F65A40F003F56C6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		4D361A862F65A43A003F56C6 /* ProjectSimple.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ProjectSimple.entitlements; sourceTree = "<group>"; };
+		4D361A872F65A484003F56C6 /* OverdueTasksWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OverdueTasksWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4D361A812F65A410003F56C6 /* Exceptions for "OverdueTasksWidget" folder in "OverdueTasksWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */;
+		};
+		4D361A892F65A574003F56C6 /* Exceptions for "ClaudeApp" folder in "OverdueTasksWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/ProjectModels.swift,
+				Models/SharedModelContainer.swift,
+			);
+			target = 4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4D25A7702F6074BB00E97C2D /* ClaudeApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4D361A892F65A574003F56C6 /* Exceptions for "ClaudeApp" folder in "OverdueTasksWidgetExtension" target */,
+			);
 			path = ClaudeApp;
 			sourceTree = "<group>";
 		};
 		4D2CF1592F607BB300341A4B /* ClaudeAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ClaudeAppTests;
+			sourceTree = "<group>";
+		};
+		4D361A742F65A40F003F56C6 /* OverdueTasksWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4D361A812F65A410003F56C6 /* Exceptions for "OverdueTasksWidget" folder in "OverdueTasksWidgetExtension" target */,
+			);
+			path = OverdueTasksWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -49,14 +110,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4D361A6B2F65A40F003F56C6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D361A732F65A40F003F56C6 /* SwiftUI.framework in Frameworks */,
+				4D361A712F65A40F003F56C6 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		4D25A7652F6074BB00E97C2D = {
 			isa = PBXGroup;
 			children = (
+				4D361A872F65A484003F56C6 /* OverdueTasksWidgetExtension.entitlements */,
+				4D361A862F65A43A003F56C6 /* ProjectSimple.entitlements */,
 				4D25A7702F6074BB00E97C2D /* ClaudeApp */,
 				4D2CF1592F607BB300341A4B /* ClaudeAppTests */,
+				4D361A742F65A40F003F56C6 /* OverdueTasksWidget */,
+				4D361A6F2F65A40F003F56C6 /* Frameworks */,
 				4D25A76F2F6074BB00E97C2D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,40 +138,52 @@
 		4D25A76F2F6074BB00E97C2D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4D25A76E2F6074BB00E97C2D /* ClaudeApp.app */,
-				4D2CF1582F607BB300341A4B /* ClaudeAppTests.xctest */,
+				4D25A76E2F6074BB00E97C2D /* ProjectSimple.app */,
+				4D2CF1582F607BB300341A4B /* ProjectSimpleTests.xctest */,
+				4D361A6E2F65A40F003F56C6 /* OverdueTasksWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4D361A6F2F65A40F003F56C6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4D361A702F65A40F003F56C6 /* WidgetKit.framework */,
+				4D361A722F65A40F003F56C6 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4D25A76D2F6074BB00E97C2D /* ClaudeApp */ = {
+		4D25A76D2F6074BB00E97C2D /* ProjectSimple */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4D25A7792F6074BE00E97C2D /* Build configuration list for PBXNativeTarget "ClaudeApp" */;
+			buildConfigurationList = 4D25A7792F6074BE00E97C2D /* Build configuration list for PBXNativeTarget "ProjectSimple" */;
 			buildPhases = (
 				4D25A76A2F6074BB00E97C2D /* Sources */,
 				4D25A76B2F6074BB00E97C2D /* Frameworks */,
 				4D25A76C2F6074BB00E97C2D /* Resources */,
+				4D361A852F65A410003F56C6 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4D361A7F2F65A410003F56C6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4D25A7702F6074BB00E97C2D /* ClaudeApp */,
 			);
-			name = ClaudeApp;
+			name = ProjectSimple;
 			packageProductDependencies = (
 			);
 			productName = ClaudeApp;
-			productReference = 4D25A76E2F6074BB00E97C2D /* ClaudeApp.app */;
+			productReference = 4D25A76E2F6074BB00E97C2D /* ProjectSimple.app */;
 			productType = "com.apple.product-type.application";
 		};
-		4D2CF1572F607BB300341A4B /* ClaudeAppTests */ = {
+		4D2CF1572F607BB300341A4B /* ProjectSimpleTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4D2CF15E2F607BB300341A4B /* Build configuration list for PBXNativeTarget "ClaudeAppTests" */;
+			buildConfigurationList = 4D2CF15E2F607BB300341A4B /* Build configuration list for PBXNativeTarget "ProjectSimpleTests" */;
 			buildPhases = (
 				4D2CF1542F607BB300341A4B /* Sources */,
 				4D2CF1552F607BB300341A4B /* Frameworks */,
@@ -111,12 +197,34 @@
 			fileSystemSynchronizedGroups = (
 				4D2CF1592F607BB300341A4B /* ClaudeAppTests */,
 			);
-			name = ClaudeAppTests;
+			name = ProjectSimpleTests;
 			packageProductDependencies = (
 			);
 			productName = ClaudeAppTests;
-			productReference = 4D2CF1582F607BB300341A4B /* ClaudeAppTests.xctest */;
+			productReference = 4D2CF1582F607BB300341A4B /* ProjectSimpleTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4D361A822F65A410003F56C6 /* Build configuration list for PBXNativeTarget "OverdueTasksWidgetExtension" */;
+			buildPhases = (
+				4D361A6A2F65A40F003F56C6 /* Sources */,
+				4D361A6B2F65A40F003F56C6 /* Frameworks */,
+				4D361A6C2F65A40F003F56C6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4D361A742F65A40F003F56C6 /* OverdueTasksWidget */,
+			);
+			name = OverdueTasksWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = OverdueTasksWidgetExtension;
+			productReference = 4D361A6E2F65A40F003F56C6 /* OverdueTasksWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -135,9 +243,12 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = 4D25A76D2F6074BB00E97C2D;
 					};
+					4D361A6D2F65A40F003F56C6 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 				};
 			};
-			buildConfigurationList = 4D25A7692F6074BB00E97C2D /* Build configuration list for PBXProject "ClaudeApp" */;
+			buildConfigurationList = 4D25A7692F6074BB00E97C2D /* Build configuration list for PBXProject "ProjectSimple" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -151,8 +262,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4D25A76D2F6074BB00E97C2D /* ClaudeApp */,
-				4D2CF1572F607BB300341A4B /* ClaudeAppTests */,
+				4D25A76D2F6074BB00E97C2D /* ProjectSimple */,
+				4D2CF1572F607BB300341A4B /* ProjectSimpleTests */,
+				4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -166,6 +278,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4D2CF1562F607BB300341A4B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4D361A6C2F65A40F003F56C6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -189,13 +308,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4D361A6A2F65A40F003F56C6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		4D2CF15D2F607BB300341A4B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4D25A76D2F6074BB00E97C2D /* ClaudeApp */;
+			target = 4D25A76D2F6074BB00E97C2D /* ProjectSimple */;
 			targetProxy = 4D2CF15C2F607BB300341A4B /* PBXContainerItemProxy */;
+		};
+		4D361A7F2F65A410003F56C6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */;
+			targetProxy = 4D361A7E2F65A410003F56C6 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -326,6 +457,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ProjectSimple.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 56F54J4H3N;
@@ -359,6 +491,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ProjectSimple.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 56F54J4H3N;
@@ -404,7 +537,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ClaudeApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ClaudeApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ProjectSimple.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ProjectSimple";
 			};
 			name = Debug;
 		};
@@ -425,14 +558,76 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ClaudeApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ClaudeApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ProjectSimple.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ProjectSimple";
+			};
+			name = Release;
+		};
+		4D361A832F65A410003F56C6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = OverdueTasksWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 56F54J4H3N;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OverdueTasksWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OverdueTasksWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = mobilesoftwareservices.ClaudeApp.OverdueTasksWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4D361A842F65A410003F56C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = OverdueTasksWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 56F54J4H3N;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OverdueTasksWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OverdueTasksWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = mobilesoftwareservices.ClaudeApp.OverdueTasksWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4D25A7692F6074BB00E97C2D /* Build configuration list for PBXProject "ClaudeApp" */ = {
+		4D25A7692F6074BB00E97C2D /* Build configuration list for PBXProject "ProjectSimple" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4D25A7772F6074BE00E97C2D /* Debug */,
@@ -441,7 +636,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4D25A7792F6074BE00E97C2D /* Build configuration list for PBXNativeTarget "ClaudeApp" */ = {
+		4D25A7792F6074BE00E97C2D /* Build configuration list for PBXNativeTarget "ProjectSimple" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4D25A77A2F6074BE00E97C2D /* Debug */,
@@ -450,11 +645,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4D2CF15E2F607BB300341A4B /* Build configuration list for PBXNativeTarget "ClaudeAppTests" */ = {
+		4D2CF15E2F607BB300341A4B /* Build configuration list for PBXNativeTarget "ProjectSimpleTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4D2CF15F2F607BB300341A4B /* Debug */,
 				4D2CF1602F607BB300341A4B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4D361A822F65A410003F56C6 /* Build configuration list for PBXNativeTarget "OverdueTasksWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4D361A832F65A410003F56C6 /* Debug */,
+				4D361A842F65A410003F56C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

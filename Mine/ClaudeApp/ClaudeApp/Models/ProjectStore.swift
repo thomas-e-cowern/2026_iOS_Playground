@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 @MainActor
 @Observable
@@ -40,6 +41,7 @@ class ProjectStore {
             errorMessage = "Failed to save: \(error.localizedDescription)"
         }
         refreshProjects()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func scheduleNotifications() {
@@ -107,8 +109,31 @@ class ProjectStore {
     }
 
     func updateTask(_ task: ProjectTask, in projectID: UUID) {
+        generateNextOccurrenceIfNeeded(for: task, in: projectID)
         save()
         scheduleNotifications()
+    }
+
+    // MARK: - Recurrence
+
+    private func generateNextOccurrenceIfNeeded(for task: ProjectTask, in projectID: UUID) {
+        guard task.status == .completed,
+              task.recurrenceRule != .none,
+              !task.hasGeneratedNextOccurrence,
+              let nextDate = task.recurrenceRule.nextDueDate(from: task.dueDate),
+              let project = projects.first(where: { $0.id == projectID })
+        else { return }
+
+        let nextTask = ProjectTask(
+            title: task.title,
+            details: task.details,
+            dueDate: nextDate,
+            priority: task.priority,
+            recurrenceRule: task.recurrenceRule
+        )
+
+        task.hasGeneratedNextOccurrence = true
+        project.tasks.append(nextTask)
     }
 
     func deleteTask(_ taskID: UUID, from projectID: UUID) {
@@ -198,35 +223,62 @@ class ProjectStore {
         let calendar = Calendar.current
         let today = Date.now
 
-        let designTasks = [
-            ProjectTask(title: "Create wireframes", details: "Design low-fidelity wireframes for all screens", dueDate: calendar.date(byAdding: .day, value: 1, to: today)!, status: .completed, priority: .high),
-            ProjectTask(title: "Design system setup", details: "Define colors, typography, and spacing tokens", dueDate: calendar.date(byAdding: .day, value: 3, to: today)!, status: .inProgress, priority: .high),
-            ProjectTask(title: "High-fidelity mockups", details: "Create detailed mockups for key screens", dueDate: calendar.date(byAdding: .day, value: 7, to: today)!, status: .notStarted, priority: .medium),
-            ProjectTask(title: "Prototype interactions", details: "Build interactive prototype for user testing", dueDate: calendar.date(byAdding: .day, value: 12, to: today)!, status: .notStarted, priority: .low),
+        let gettingStartedTasks = [
+            ProjectTask(
+                title: "Explore this project",
+                details: "Tap this project to see its tasks. You're looking at one now! Each task has a status, priority, and due date.",
+                dueDate: calendar.date(byAdding: .day, value: 1, to: today)!,
+                status: .inProgress,
+                priority: .high
+            ),
+            ProjectTask(
+                title: "Mark a task complete",
+                details: "Open any task and change its status to Completed. Try it with the 'Explore this project' task once you're done reading it.",
+                dueDate: calendar.date(byAdding: .day, value: 2, to: today)!,
+                status: .notStarted,
+                priority: .high
+            ),
+            ProjectTask(
+                title: "Add your own task",
+                details: "Tap the + button at the top of the project to add a new task. Give it a title, due date, and priority.",
+                dueDate: calendar.date(byAdding: .day, value: 3, to: today)!,
+                status: .notStarted,
+                priority: .medium
+            ),
+            ProjectTask(
+                title: "Try the Search tab",
+                details: "Switch to the Search tab to find tasks across all projects. You can filter by priority and category using the filter button.",
+                dueDate: calendar.date(byAdding: .day, value: 4, to: today)!,
+                status: .notStarted,
+                priority: .medium
+            ),
+            ProjectTask(
+                title: "Check the Calendar tab",
+                details: "The Calendar tab shows tasks by due date. Tap any date to see what's due. Overdue tasks appear at the top.",
+                dueDate: calendar.date(byAdding: .day, value: 5, to: today)!,
+                status: .notStarted,
+                priority: .low
+            ),
+            ProjectTask(
+                title: "Create your first project",
+                details: "Go back to the Projects tab and tap + to create a new project. Choose a name, color, category, and date range. Once you're comfortable, feel free to delete this Getting Started project.",
+                dueDate: calendar.date(byAdding: .day, value: 7, to: today)!,
+                status: .notStarted,
+                priority: .low
+            ),
         ]
 
-        let backendTasks = [
-            ProjectTask(title: "Set up database schema", details: "Design and implement the database models", dueDate: calendar.date(byAdding: .day, value: 2, to: today)!, status: .inProgress, priority: .high),
-            ProjectTask(title: "Authentication API", details: "Implement JWT-based auth endpoints", dueDate: calendar.date(byAdding: .day, value: 5, to: today)!, status: .notStarted, priority: .high),
-            ProjectTask(title: "REST endpoints", details: "Build CRUD endpoints for all resources", dueDate: calendar.date(byAdding: .day, value: 10, to: today)!, status: .notStarted, priority: .medium),
-            ProjectTask(title: "Write unit tests", details: "Achieve 80% code coverage", dueDate: calendar.date(byAdding: .day, value: 14, to: today)!, status: .notStarted, priority: .medium),
-            ProjectTask(title: "Deploy to staging", details: "Set up CI/CD and deploy to staging environment", dueDate: calendar.date(byAdding: .day, value: 18, to: today)!, status: .notStarted, priority: .low),
-        ]
+        let gettingStarted = Project(
+            name: "Getting Started",
+            descriptionText: "Welcome! This project walks you through the basics of the app. Complete each task to learn how things work.",
+            startDate: today,
+            endDate: calendar.date(byAdding: .month, value: 1, to: today)!,
+            tasks: gettingStartedTasks,
+            colorName: "blue",
+            category: .personal
+        )
 
-        let marketingTasks = [
-            ProjectTask(title: "Market research", details: "Analyze competitor landscape and target audience", dueDate: calendar.date(byAdding: .day, value: -1, to: today)!, status: .completed, priority: .high),
-            ProjectTask(title: "Brand guidelines", details: "Finalize brand voice, tone, and visual identity", dueDate: calendar.date(byAdding: .day, value: 4, to: today)!, status: .inProgress, priority: .medium),
-            ProjectTask(title: "Content calendar", details: "Plan social media and blog content for launch", dueDate: calendar.date(byAdding: .day, value: 8, to: today)!, status: .notStarted, priority: .medium),
-            ProjectTask(title: "Press release", details: "Draft and finalize launch press release", dueDate: calendar.date(byAdding: .day, value: 15, to: today)!, status: .notStarted, priority: .low),
-        ]
-
-        let project1 = Project(name: "App Redesign", descriptionText: "Complete UI/UX overhaul of the mobile app", startDate: today, endDate: calendar.date(byAdding: .month, value: 1, to: today)!, tasks: designTasks, colorName: "blue")
-        let project2 = Project(name: "Backend Overhaul", descriptionText: "Migrate to new backend architecture", startDate: today, endDate: calendar.date(byAdding: .month, value: 2, to: today)!, tasks: backendTasks, colorName: "purple")
-        let project3 = Project(name: "Marketing Launch", descriptionText: "Coordinate marketing efforts for product launch", startDate: calendar.date(byAdding: .day, value: -5, to: today)!, endDate: calendar.date(byAdding: .month, value: 1, to: today)!, tasks: marketingTasks, colorName: "orange")
-
-        modelContext.insert(project1)
-        modelContext.insert(project2)
-        modelContext.insert(project3)
+        modelContext.insert(gettingStarted)
         save()
     }
 }

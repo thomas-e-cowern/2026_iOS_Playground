@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import ClaudeApp
+@testable import ProjectSimple
 
 // MARK: - TaskStatus Tests
 
@@ -83,5 +83,80 @@ struct ProjectCategoryTests {
 
     @Test func allCasesContainsAllCategories() {
         #expect(ProjectCategory.allCases.count == 6)
+    }
+}
+
+// MARK: - RecurrenceRule Tests
+// Note: Must use module-qualified name to disambiguate from Foundation's Calendar.RecurrenceRule.
+
+private typealias Recurrence = ProjectSimple.RecurrenceRule
+
+struct RecurrenceRuleTests {
+
+    @Test func rawValues() {
+        #expect(Recurrence.none.rawValue == "None")
+        #expect(Recurrence.daily.rawValue == "Daily")
+        #expect(Recurrence.weekly.rawValue == "Weekly")
+        #expect(Recurrence.biweekly.rawValue == "Biweekly")
+        #expect(Recurrence.monthly.rawValue == "Monthly")
+        #expect(Recurrence.yearly.rawValue == "Yearly")
+    }
+
+    @Test func allCasesContainsAllRules() {
+        #expect(Recurrence.allCases.count == 6)
+    }
+
+    @Test func noneReturnsNilNextDate() {
+        let date = Date.now
+        #expect(Recurrence.none.nextDueDate(from: date) == nil)
+    }
+
+    @Test func dailyAdvancesOneDay() {
+        let calendar = Calendar.current
+        let base = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10))!
+        let next = Recurrence.daily.nextDueDate(from: base)!
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 3, day: 11))!
+        #expect(calendar.isDate(next, inSameDayAs: expected))
+    }
+
+    @Test func weeklyAdvancesOneWeek() {
+        let calendar = Calendar.current
+        let base = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10))!
+        let next = Recurrence.weekly.nextDueDate(from: base)!
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 3, day: 17))!
+        #expect(calendar.isDate(next, inSameDayAs: expected))
+    }
+
+    @Test func biweeklyAdvancesTwoWeeks() {
+        let calendar = Calendar.current
+        let base = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10))!
+        let next = Recurrence.biweekly.nextDueDate(from: base)!
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 3, day: 24))!
+        #expect(calendar.isDate(next, inSameDayAs: expected))
+    }
+
+    @Test func monthlyAdvancesOneMonth() {
+        let calendar = Calendar.current
+        let base = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10))!
+        let next = Recurrence.monthly.nextDueDate(from: base)!
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 4, day: 10))!
+        #expect(calendar.isDate(next, inSameDayAs: expected))
+    }
+
+    @Test func yearlyAdvancesOneYear() {
+        let calendar = Calendar.current
+        let base = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10))!
+        let next = Recurrence.yearly.nextDueDate(from: base)!
+        let expected = calendar.date(from: DateComponents(year: 2027, month: 3, day: 10))!
+        #expect(calendar.isDate(next, inSameDayAs: expected))
+    }
+
+    @Test func monthlyHandlesEndOfMonth() {
+        let calendar = Calendar.current
+        let base = calendar.date(from: DateComponents(year: 2026, month: 1, day: 31))!
+        let next = Recurrence.monthly.nextDueDate(from: base)!
+        // Jan 31 + 1 month = Feb 28 (2026 is not a leap year)
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 2, day: 28))!
+        #expect(calendar.isDate(next, inSameDayAs: expected))
     }
 }

@@ -1,24 +1,18 @@
 import AppIntents
 import SwiftData
 
-// MARK: - New Project Intent
+// MARK: - Helpers
 
-struct NewProjectIntent: AppIntent {
-    static var title: LocalizedStringResource = "New Project"
-    static var description = IntentDescription("Creates a new project.")
-    static var openAppWhenRun: Bool = true
-
-    @MainActor
-    func perform() async throws -> some IntentResult {
-        QuickActionState.shared.pendingAction = "com.claudeapp.newProject"
-        return .result()
-    }
+/// Creates a ModelContext from the shared container for use in intents
+private func makeContext() throws -> ModelContext {
+    let container = try SharedModelContainer.create()
+    return ModelContext(container)
 }
 
 // MARK: - Project Entity
 
 struct ProjectEntity: AppEntity {
-    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "SimpleProject")
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Project")
     static var defaultQuery = ProjectEntityQuery()
 
     var id: UUID
@@ -32,8 +26,7 @@ struct ProjectEntity: AppEntity {
 struct ProjectEntityQuery: EntityQuery {
     @MainActor
     func entities(for identifiers: [UUID]) async throws -> [ProjectEntity] {
-        let container = try ModelContainer(for: Project.self, ProjectTask.self)
-        let context = container.mainContext
+        let context = try makeContext()
         let descriptor = FetchDescriptor<Project>()
         let projects = (try? context.fetch(descriptor)) ?? []
         return projects
@@ -43,8 +36,7 @@ struct ProjectEntityQuery: EntityQuery {
 
     @MainActor
     func suggestedEntities() async throws -> [ProjectEntity] {
-        let container = try ModelContainer(for: Project.self, ProjectTask.self)
-        let context = container.mainContext
+        let context = try makeContext()
         let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
         let projects = (try? context.fetch(descriptor)) ?? []
         return projects
@@ -53,21 +45,226 @@ struct ProjectEntityQuery: EntityQuery {
     }
 }
 
+// MARK: - Task Entity
+
+struct TaskEntity: AppEntity {
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Task")
+    static var defaultQuery = TaskEntityQuery()
+
+    var id: UUID
+    var title: String
+    var projectName: String
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(title)", subtitle: "\(projectName)")
+    }
+}
+
+struct TaskEntityQuery: EntityQuery {
+    @MainActor
+    func entities(for identifiers: [UUID]) async throws -> [TaskEntity] {
+        let context = try makeContext()
+        let descriptor = FetchDescriptor<Project>()
+        let projects = (try? context.fetch(descriptor)) ?? []
+        var results: [TaskEntity] = []
+        for project in projects where !project.isArchived {
+            for task in project.activeTasks where identifiers.contains(task.id) {
+                results.append(TaskEntity(id: task.id, title: task.title, projectName: project.name))
+            }
+        }
+        return results
+    }
+
+    @MainActor
+    func suggestedEntities() async throws -> [TaskEntity] {
+        let context = try makeContext()
+        let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
+        let projects = (try? context.fetch(descriptor)) ?? []
+        var results: [TaskEntity] = []
+        for project in projects where !project.isArchived {
+            for task in project.activeTasks where task.status != .completed {
+                results.append(TaskEntity(id: task.id, title: task.title, projectName: project.name))
+            }
+        }
+        return results
+    }
+}
+
+// MARK: - New Project Intent
+
+struct NewProjectIntent: AppIntent {
+    static var title: LocalizedStringResource = "New Project"
+    static var description = IntentDescription("Creates a new project in ProjectSimple.")
+    static var openAppWhenRun: Bool = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        QuickActionState.shared.pendingAction = "com.claudeapp.newProject"
+        return .result(dialog: "Opening ProjectSimple to create a new project.")
+    }
+}
+
 // MARK: - Add Task Intent
 
 struct AddTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Task"
-    static var description = IntentDescription("Adds a new task to a simpleproject.")
+    static var description = IntentDescription("Opens ProjectSimple to add a new task to a project.")
     static var openAppWhenRun: Bool = true
 
-    @Parameter(title: "SimpleProject")
+    @Parameter(title: "Project")
     var project: ProjectEntity
 
     @MainActor
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & ProvidesDialog {
         QuickActionState.shared.pendingProjectID = project.id
         QuickActionState.shared.pendingAction = "com.claudeapp.addTask"
-        return .result()
+        return .result(dialog: "Opening \(project.name) to add a task.")
+    }
+}
+
+// MARK: - Show Overdue Tasks Intent
+
+struct ShowOverdueTasksIntent: AppIntent {
+    static var title: LocalizedStringResource = "Show Overdue Tasks"
+    static var description = IntentDescription("Shows your overdue tasks from ProjectSimple.")
+    static var openAppWhenRun: Bool = false
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let context = try makeContext()
+        let descriptor = FetchDescriptor<Project>(
+            predicate: #Predicate<Project> { !$0.isArchived }
+        )
+        let projects = (try? context.fetch(descriptor)) ?? []
+
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: .now)
+
+        var overdueTasks: [(title: String, projectName: String)] = []
+        for project in projects {
+            for task in project.activeTasks {
+                if task.status != .completed && task.dueDate < startOfToday {
+                    overdueTasks.append((title: task.title, projectName: project.name))
+                }
+            }
+        }
+
+        if overdueTasks.isEmpty {
+            return .result(dialog: "You have no overdue tasks. You're all caught up!")
+        }
+
+        let count = overdueTasks.count
+        let taskWord = count == 1 ? "task" : "tasks"
+        let listing = overdueTasks.prefix(5)
+            .map { "\($0.title) in \($0.projectName)" }
+            .joined(separator: ". ")
+
+        let summary: String
+        if count <= 5 {
+            summary = "You have \(count) overdue \(taskWord): \(listing)."
+        } else {
+            summary = "You have \(count) overdue \(taskWord). Here are the first 5: \(listing)."
+        }
+
+        return .result(dialog: "\(summary)")
+    }
+}
+
+// MARK: - Get Task Count Intent
+
+struct GetTaskCountIntent: AppIntent {
+    static var title: LocalizedStringResource = "Task Summary"
+    static var description = IntentDescription("Tells you how many active tasks you have in ProjectSimple.")
+    static var openAppWhenRun: Bool = false
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let context = try makeContext()
+        let descriptor = FetchDescriptor<Project>(
+            predicate: #Predicate<Project> { !$0.isArchived }
+        )
+        let projects = (try? context.fetch(descriptor)) ?? []
+
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: .now)
+        let endOfToday = calendar.date(byAdding: .day, value: 1, to: startOfToday)!
+
+        var totalActive = 0
+        var overdueCount = 0
+        var dueTodayCount = 0
+
+        for project in projects {
+            for task in project.activeTasks where task.status != .completed {
+                totalActive += 1
+                if task.dueDate < startOfToday {
+                    overdueCount += 1
+                } else if task.dueDate >= startOfToday && task.dueDate < endOfToday {
+                    dueTodayCount += 1
+                }
+            }
+        }
+
+        if totalActive == 0 {
+            return .result(dialog: "You have no active tasks. Nice work!")
+        }
+
+        var parts: [String] = []
+        parts.append("You have \(totalActive) active \(totalActive == 1 ? "task" : "tasks")")
+
+        if overdueCount > 0 {
+            parts.append("\(overdueCount) \(overdueCount == 1 ? "is" : "are") overdue")
+        }
+        if dueTodayCount > 0 {
+            parts.append("\(dueTodayCount) \(dueTodayCount == 1 ? "is" : "are") due today")
+        }
+
+        let dialog = parts.joined(separator: ", ") + "."
+        return .result(dialog: "\(dialog)")
+    }
+}
+
+// MARK: - Mark Task Complete Intent
+
+struct MarkTaskCompleteIntent: AppIntent {
+    static var title: LocalizedStringResource = "Mark Task Complete"
+    static var description = IntentDescription("Marks a task as completed in ProjectSimple.")
+    static var openAppWhenRun: Bool = false
+
+    @Parameter(title: "Task")
+    var task: TaskEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let context = try makeContext()
+        let descriptor = FetchDescriptor<Project>(
+            predicate: #Predicate<Project> { !$0.isArchived }
+        )
+        let projects = (try? context.fetch(descriptor)) ?? []
+
+        for project in projects {
+            if let matchingTask = project.activeTasks.first(where: { $0.id == task.id }) {
+                matchingTask.status = .completed
+
+                // Handle recurrence
+                if matchingTask.recurrenceRule != .none && !matchingTask.hasGeneratedNextOccurrence,
+                   let nextDate = matchingTask.recurrenceRule.nextDueDate(from: matchingTask.dueDate) {
+                    let nextTask = ProjectTask(
+                        title: matchingTask.title,
+                        details: matchingTask.details,
+                        dueDate: nextDate,
+                        priority: matchingTask.priority,
+                        recurrenceRule: matchingTask.recurrenceRule
+                    )
+                    matchingTask.hasGeneratedNextOccurrence = true
+                    project.tasks.append(nextTask)
+                }
+
+                try? context.save()
+                return .result(dialog: "Done! I've marked \"\(task.title)\" as completed.")
+            }
+        }
+
+        return .result(dialog: "I couldn't find that task. It may have been deleted or archived.")
     }
 }
 
@@ -95,6 +292,36 @@ struct AppShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Add Task",
             systemImageName: "plus.circle"
+        )
+        AppShortcut(
+            intent: ShowOverdueTasksIntent(),
+            phrases: [
+                "Show overdue tasks in \(.applicationName)",
+                "What's overdue in \(.applicationName)",
+                "Check overdue in \(.applicationName)"
+            ],
+            shortTitle: "Overdue Tasks",
+            systemImageName: "exclamationmark.triangle"
+        )
+        AppShortcut(
+            intent: GetTaskCountIntent(),
+            phrases: [
+                "Task summary in \(.applicationName)",
+                "How many tasks in \(.applicationName)",
+                "What's due in \(.applicationName)"
+            ],
+            shortTitle: "Task Summary",
+            systemImageName: "number.circle"
+        )
+        AppShortcut(
+            intent: MarkTaskCompleteIntent(),
+            phrases: [
+                "Complete a task in \(.applicationName)",
+                "Mark task done in \(.applicationName)",
+                "Finish a task in \(.applicationName)"
+            ],
+            shortTitle: "Complete Task",
+            systemImageName: "checkmark.circle"
         )
     }
 }

@@ -1,6 +1,6 @@
 import Testing
 import PDFKit
-@testable import ClaudeApp
+@testable import ProjectSimple
 
 struct PDFGeneratorTests {
 

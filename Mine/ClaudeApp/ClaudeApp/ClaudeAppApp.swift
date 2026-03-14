@@ -62,7 +62,7 @@ struct ClaudeAppApp: App {
 
     init() {
         do {
-            container = try ModelContainer(for: Project.self, ProjectTask.self)
+            container = try SharedModelContainer.create()
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
@@ -84,6 +84,11 @@ struct ClaudeAppApp: App {
                 .environment(notificationManager)
                 .environment(quickActionState)
                 .modelContainer(container)
+                .onOpenURL { url in
+                    if url.host() == "overdue" {
+                        QuickActionState.shared.pendingAction = "com.claudeapp.showOverdue"
+                    }
+                }
         }
     }
 }

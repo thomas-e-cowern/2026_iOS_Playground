@@ -76,8 +76,8 @@ struct OverdueCircularView: View {
     var body: some View {
         ZStack {
             AccessoryWidgetBackground()
-            VStack(spacing: 1) {
-                Image(systemName: "exclamationmark.triangle.fill")
+            VStack(spacing: 0) {
+                Image(systemName: "checklist.unchecked")
                     .font(.caption)
                     .widgetAccentable()
                 Text("\(entry.overdueCount)")
@@ -96,11 +96,15 @@ struct OverdueRectangularView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(systemName: "checklist.unchecked")
                     .font(.caption)
                     .widgetAccentable()
+                Text("ProjectSimple")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
                 Text("\(entry.overdueCount) Overdue")
-                    .font(.headline)
+                    .font(.caption2.weight(.semibold))
                     .widgetAccentable()
             }
 
@@ -146,6 +150,7 @@ struct OverdueTasksWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: OverdueTasksProvider()) { entry in
             OverdueTasksWidgetEntryView(entry: entry)
+                .containerBackground(.clear, for: .widget)
                 .widgetURL(URL(string: "projectsimple://overdue"))
         }
         .configurationDisplayName("Overdue Tasks")

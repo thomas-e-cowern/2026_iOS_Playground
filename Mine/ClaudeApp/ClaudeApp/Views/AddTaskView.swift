@@ -10,6 +10,7 @@ struct AddTaskView: View {
     @State private var details = ""
     @State private var dueDate = Date.now
     @State private var priority: TaskPriority = .medium
+    @State private var recurrenceRule: RecurrenceRule = .none
 
     var body: some View {
         NavigationStack {
@@ -32,6 +33,14 @@ struct AddTaskView: View {
                     }
                     .pickerStyle(.segmented)
                 }
+
+                Section("Recurrence") {
+                    Picker("Repeat", selection: $recurrenceRule) {
+                        ForEach(RecurrenceRule.allCases, id: \.self) { rule in
+                            Text(rule.rawValue).tag(rule)
+                        }
+                    }
+                }
             }
             .navigationTitle("New Task")
             .navigationBarTitleDisplayMode(.inline)
@@ -48,7 +57,8 @@ struct AddTaskView: View {
                             title: title,
                             details: details,
                             dueDate: dueDate,
-                            priority: priority
+                            priority: priority,
+                            recurrenceRule: recurrenceRule
                         )
                         store.addTask(task, to: projectID)
                         dismiss()

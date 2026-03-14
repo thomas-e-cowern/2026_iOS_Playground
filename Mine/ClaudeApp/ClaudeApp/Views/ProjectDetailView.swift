@@ -294,13 +294,19 @@ struct TaskRow: View {
                         .background(priorityColor.opacity(0.15))
                         .foregroundStyle(priorityColor)
                         .clipShape(Capsule())
+
+                    if task.recurrenceRule != .none {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
             Spacer()
         }
         .padding(.vertical, 2)
-        .accessibilityLabel("\(task.title), \(task.status.rawValue), \(task.priority.rawValue) priority\(isDueSoon ? ", due soon" : "")")
+        .accessibilityLabel("\(task.title), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")\(isDueSoon ? ", due soon" : "")")
     }
 
     private func cycleStatus() {

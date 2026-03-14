@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import ClaudeApp
+@testable import ProjectSimple
 
 // MARK: - NotificationManager Tests (no SwiftData dependency)
 

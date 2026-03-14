@@ -5,5 +5,6 @@ import SwiftUI
 struct OverdueTasksWidgetBundle: WidgetBundle {
     var body: some Widget {
         OverdueTasksWidget()
+        HomeScreenWidget()
     }
 }

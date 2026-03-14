@@ -84,6 +84,8 @@ struct ContentView: View {
                     showQuickAddTask = true
                 }
             }
+        case "com.claudeapp.showOverdue":
+            selectedTab = .calendar
         default:
             break
         }

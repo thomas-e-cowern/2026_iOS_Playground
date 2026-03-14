@@ -5,24 +5,54 @@ struct SearchView: View {
     @Environment(ProjectStore.self) private var store
     @State private var searchText = ""
     @State private var priorityFilter: TaskPriority?
+    @State private var categoryFilter: ProjectCategory?
     private var searchFilterTip = SearchFilterTip()
 
     private var isFiltering: Bool {
-        !searchText.isEmpty || priorityFilter != nil
+        !searchText.isEmpty || priorityFilter != nil || categoryFilter != nil
+    }
+
+    private var hasActiveFilter: Bool {
+        priorityFilter != nil || categoryFilter != nil
+    }
+
+    private var filterAccessibilityLabel: String {
+        var parts: [String] = []
+        if let priorityFilter {
+            parts.append(priorityFilter.rawValue)
+        }
+        if let categoryFilter {
+            parts.append(categoryFilter.rawValue)
+        }
+        return parts.isEmpty ? "Filter by priority or category" : "Filter: \(parts.joined(separator: ", "))"
     }
 
     private var matchingProjects: [Project] {
-        guard !searchText.isEmpty else { return [] }
-        let query = searchText.lowercased()
-        return store.activeProjects.filter {
-            $0.name.lowercased().contains(query) ||
-            $0.descriptionText.lowercased().contains(query)
+        var results = store.activeProjects
+
+        if let categoryFilter {
+            results = results.filter { $0.category == categoryFilter }
         }
+
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            results = results.filter {
+                $0.name.lowercased().contains(query) ||
+                $0.descriptionText.lowercased().contains(query)
+            }
+        } else if categoryFilter == nil {
+            return []
+        }
+
+        return results
     }
 
     private var matchingTasks: [(project: Project, task: ProjectTask)] {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in store.activeProjects {
+            if let categoryFilter, project.category != categoryFilter {
+                continue
+            }
             for task in project.activeTasks {
                 if let filter = priorityFilter, task.priority != filter {
                     continue
@@ -47,7 +77,7 @@ struct SearchView: View {
                     ContentUnavailableView {
                         Label("Search", systemImage: "magnifyingglass")
                     } description: {
-                        Text("Search for projects and tasks by name, or filter tasks by priority.")
+                        Text("Search for projects and tasks by name, or filter by priority and category.")
                     }
                 } else if matchingProjects.isEmpty && matchingTasks.isEmpty {
                     ContentUnavailableView.search(text: searchText)
@@ -86,34 +116,59 @@ struct SearchView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button {
-                            priorityFilter = nil
-                        } label: {
-                            if priorityFilter == nil {
-                                Label("All Priorities", systemImage: "checkmark")
-                            } else {
-                                Text("All Priorities")
+                        Section("Priority") {
+                            Button {
+                                priorityFilter = nil
+                            } label: {
+                                if priorityFilter == nil {
+                                    Label("All Priorities", systemImage: "checkmark")
+                                } else {
+                                    Text("All Priorities")
+                                }
+                            }
+                            ForEach(TaskPriority.allCases, id: \.self) { priority in
+                                Button {
+                                    priorityFilter = priority
+                                    searchFilterTip.invalidate(reason: .actionPerformed)
+                                } label: {
+                                    if priorityFilter == priority {
+                                        Label(priority.rawValue, systemImage: "checkmark")
+                                    } else {
+                                        Text(priority.rawValue)
+                                    }
+                                }
                             }
                         }
-                        Divider()
-                        ForEach(TaskPriority.allCases, id: \.self) { priority in
+
+                        Section("Category") {
                             Button {
-                                priorityFilter = priority
-                                searchFilterTip.invalidate(reason: .actionPerformed)
+                                categoryFilter = nil
                             } label: {
-                                if priorityFilter == priority {
-                                    Label(priority.rawValue, systemImage: "checkmark")
+                                if categoryFilter == nil {
+                                    Label("All Categories", systemImage: "checkmark")
                                 } else {
-                                    Text(priority.rawValue)
+                                    Text("All Categories")
+                                }
+                            }
+                            ForEach(ProjectCategory.allCases, id: \.self) { category in
+                                Button {
+                                    categoryFilter = category
+                                    searchFilterTip.invalidate(reason: .actionPerformed)
+                                } label: {
+                                    if categoryFilter == category {
+                                        Label(category.rawValue, systemImage: "checkmark")
+                                    } else {
+                                        Label(category.rawValue, systemImage: category.icon)
+                                    }
                                 }
                             }
                         }
                     } label: {
-                        Image(systemName: priorityFilter != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        Image(systemName: hasActiveFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                     }
                     .popoverTip(searchFilterTip)
-                    .accessibilityLabel(priorityFilter != nil ? "Filter: \(priorityFilter!.rawValue)" : "Filter by priority")
-                    .accessibilityHint("Double tap to change priority filter")
+                    .accessibilityLabel(filterAccessibilityLabel)
+                    .accessibilityHint("Double tap to change filters")
                 }
             }
         }
@@ -153,6 +208,12 @@ struct SearchTaskRow: View {
                     Text(task.dueDate, style: .date)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    if task.recurrenceRule != .none {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -160,7 +221,7 @@ struct SearchTaskRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(task.title), \(projectName), \(task.status.rawValue), \(task.priority.rawValue) priority")
+        .accessibilityLabel("\(task.title), \(projectName), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")")
     }
 
     private var statusColor: Color {

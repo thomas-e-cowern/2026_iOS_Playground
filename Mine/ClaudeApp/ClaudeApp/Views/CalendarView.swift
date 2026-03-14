@@ -303,9 +303,15 @@ struct CalendarTaskRow: View {
                 .background(priorityColor.opacity(0.15))
                 .foregroundStyle(priorityColor)
                 .clipShape(Capsule())
+
+            if task.recurrenceRule != .none {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(task.title), \(project.name), \(task.status.rawValue), \(task.priority.rawValue) priority")
+        .accessibilityLabel("\(task.title), \(project.name), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")")
     }
 
     private var statusColor: Color {

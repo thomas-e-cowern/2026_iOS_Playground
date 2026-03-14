@@ -1,13 +1,17 @@
 import Testing
 import Foundation
 import SwiftData
-@testable import ClaudeApp
+@testable import ProjectSimple
 
 // Single shared container to prevent "model instance was destroyed" errors
 // caused by creating multiple ModelContainers for the same schema.
 private let _testContainer: ModelContainer = {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    return try! ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+    do {
+        return try ModelContainer(for: Project.self, ProjectTask.self, configurations: config)
+    } catch {
+        fatalError("Failed to create test ModelContainer: \(error). Try Product → Clean Build Folder (Cmd+Shift+K).")
+    }
 }()
 
 // All SwiftData-dependent tests in a single serialized suite.
@@ -154,14 +158,15 @@ struct SwiftDataTests {
 
     @Test func initLoadsSampleData() {
         let store = makeStore()
-        #expect(store.projects.count == 3)
+        #expect(store.projects.count == 1)
+        #expect(store.projects[0].name == "Getting Started")
     }
 
-    @Test func sampleProjectsHaveTasks() {
+    @Test func sampleProjectHasTasks() {
         let store = makeStore()
-        for project in store.projects {
-            #expect(!project.tasks.isEmpty)
-        }
+        let project = store.projects[0]
+        #expect(!project.tasks.isEmpty)
+        #expect(project.tasks.count == 6)
     }
 
     // MARK: - Add Project
@@ -427,8 +432,7 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
         let results = store.tasks(for: tomorrow)
-//        #expect(results.contains { $0.task.title == "Design system setup" })
-        #expect(!results.contains { $0.task.title == "Create wireframes" })
+        #expect(results.contains { $0.task.title == "Explore this project" })
     }
 
     @Test func tasksForDateWithNoTasksReturnsEmpty() {
@@ -607,7 +611,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
-        let projectID = store.projects.first(where: { $0.name == "App Redesign" })!.id
+        let projectID = store.projects.first(where: { $0.name == "Getting Started" })!.id
         store.archiveProject(projectID)
         let results = store.tasks(for: tomorrow)
         #expect(results.allSatisfy { $0.project.id != projectID })
@@ -617,9 +621,9 @@ struct SwiftDataTests {
         let store = makeStore()
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
-        let project = store.projects.first(where: { $0.name == "App Redesign" })!
+        let project = store.projects.first(where: { $0.name == "Getting Started" })!
         let projectID = project.id
-        let taskID = project.tasks.first(where: { $0.title == "Create wireframes" })!.id
+        let taskID = project.tasks.first(where: { $0.title == "Explore this project" })!.id
         store.archiveTask(taskID, in: projectID)
         let results = store.tasks(for: tomorrow)
         #expect(results.allSatisfy { $0.task.id != taskID })
@@ -792,5 +796,172 @@ struct SwiftDataTests {
         task.title = "Updated"
         store.updateTask(task, in: projectID)
         store.deleteTask(task.id, from: projectID)
+    }
+
+    // MARK: - Recurrence
+
+    @Test func recurrenceDefaultsToNone() {
+        let task = ProjectTask(title: "Test", dueDate: .now)
+        #expect(task.recurrenceRule == .none)
+        #expect(task.hasGeneratedNextOccurrence == false)
+    }
+
+    @Test func recurrenceCanBeSetOnInit() {
+        let task = ProjectTask(title: "Test", dueDate: .now, recurrenceRule: .weekly)
+        #expect(task.recurrenceRule == .weekly)
+    }
+
+    @Test func completingRecurringTaskCreatesNextOccurrence() {
+        let store = makeStore()
+        let project = Project(name: "Recurrence Test")
+        store.addProject(project)
+        let projectID = project.id
+        let calendar = Calendar.current
+        let dueDate = calendar.date(byAdding: .day, value: 1, to: .now)!
+        let task = ProjectTask(
+            title: "Weekly Task",
+            dueDate: dueDate,
+            recurrenceRule: .weekly
+        )
+        store.addTask(task, to: projectID)
+        let initialCount = store.projects.first { $0.id == projectID }!.tasks.count
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        #expect(updatedProject.tasks.count == initialCount + 1)
+
+        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Weekly Task" }
+        #expect(newTask != nil)
+        #expect(newTask?.status == .notStarted)
+        #expect(newTask?.recurrenceRule == .weekly)
+        #expect(newTask?.priority == task.priority)
+        #expect(calendar.isDate(newTask!.dueDate, inSameDayAs: calendar.date(byAdding: .weekOfYear, value: 1, to: dueDate)!))
+    }
+
+    @Test func completingNonRecurringTaskDoesNotCreateOccurrence() {
+        let store = makeStore()
+        let project = Project(name: "No Recurrence Test")
+        store.addProject(project)
+        let projectID = project.id
+        let task = ProjectTask(title: "One-time Task", dueDate: .now)
+        store.addTask(task, to: projectID)
+        let initialCount = store.projects.first { $0.id == projectID }!.tasks.count
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        #expect(updatedProject.tasks.count == initialCount)
+    }
+
+    @Test func completingRecurringTaskTwiceDoesNotDuplicate() {
+        let store = makeStore()
+        let project = Project(name: "No Duplicate Test")
+        store.addProject(project)
+        let projectID = project.id
+        let task = ProjectTask(
+            title: "Daily Task",
+            dueDate: .now,
+            recurrenceRule: .daily
+        )
+        store.addTask(task, to: projectID)
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+        let countAfterFirst = store.projects.first { $0.id == projectID }!.tasks.count
+
+        store.updateTask(task, in: projectID)
+        let countAfterSecond = store.projects.first { $0.id == projectID }!.tasks.count
+
+        #expect(countAfterFirst == countAfterSecond)
+    }
+
+    @Test func cyclingFromCompletedToNotStartedDoesNotGenerate() {
+        let store = makeStore()
+        let project = Project(name: "Cycle Test")
+        store.addProject(project)
+        let projectID = project.id
+        let task = ProjectTask(
+            title: "Cycling Task",
+            dueDate: .now,
+            recurrenceRule: .monthly
+        )
+        store.addTask(task, to: projectID)
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+        let countAfterComplete = store.projects.first { $0.id == projectID }!.tasks.count
+
+        task.status = .notStarted
+        store.updateTask(task, in: projectID)
+        let countAfterCycle = store.projects.first { $0.id == projectID }!.tasks.count
+
+        #expect(countAfterComplete == countAfterCycle)
+    }
+
+    @Test func recurringTaskNextDueDate_daily() {
+        let store = makeStore()
+        let project = Project(name: "Daily Test")
+        store.addProject(project)
+        let projectID = project.id
+        let calendar = Calendar.current
+        let baseDate = calendar.date(byAdding: .day, value: 5, to: .now)!
+        let task = ProjectTask(title: "Daily", dueDate: baseDate, recurrenceRule: .daily)
+        store.addTask(task, to: projectID)
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Daily" }
+        #expect(newTask != nil)
+        let expectedDate = calendar.date(byAdding: .day, value: 1, to: baseDate)!
+        #expect(calendar.isDate(newTask!.dueDate, inSameDayAs: expectedDate))
+    }
+
+    @Test func recurringTaskNextDueDate_monthly() {
+        let store = makeStore()
+        let project = Project(name: "Monthly Test")
+        store.addProject(project)
+        let projectID = project.id
+        let calendar = Calendar.current
+        let baseDate = calendar.date(byAdding: .day, value: 5, to: .now)!
+        let task = ProjectTask(title: "Monthly", dueDate: baseDate, recurrenceRule: .monthly)
+        store.addTask(task, to: projectID)
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Monthly" }
+        #expect(newTask != nil)
+        let expectedDate = calendar.date(byAdding: .month, value: 1, to: baseDate)!
+        #expect(calendar.isDate(newTask!.dueDate, inSameDayAs: expectedDate))
+    }
+
+    @Test func completedRecurringTaskRetainsProperties() {
+        let store = makeStore()
+        let project = Project(name: "Retain Test")
+        store.addProject(project)
+        let projectID = project.id
+        let task = ProjectTask(
+            title: "Keep Me",
+            details: "Important details",
+            dueDate: .now,
+            priority: .high,
+            recurrenceRule: .weekly
+        )
+        store.addTask(task, to: projectID)
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let originalTask = updatedProject.tasks.first { $0.id == task.id }
+        #expect(originalTask?.status == .completed)
+        #expect(originalTask?.title == "Keep Me")
+        #expect(originalTask?.hasGeneratedNextOccurrence == true)
     }
 }
