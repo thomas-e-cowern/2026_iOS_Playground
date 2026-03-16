@@ -55,4 +55,20 @@ struct SearchFilterTip: Tip {
     }
 }
 
-
+struct AddStepTip: Tip {
+    var title: Text {
+        Text("Add a Step")
+    }
+    
+    var message: Text? {
+        Text("Enter some text and tap the plus button to add a new step to this task.")
+    }
+    
+    var image: Image? {
+        Image(systemName: "list.bullet.indent")
+    }
+    
+    var options: [Option] {
+        MaxDisplayCount(2)
+    }
+}
