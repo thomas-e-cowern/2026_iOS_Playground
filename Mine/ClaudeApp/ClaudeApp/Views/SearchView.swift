@@ -214,6 +214,16 @@ struct SearchTaskRow: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
+
+                    if !task.steps.isEmpty {
+                        HStack(spacing: 2) {
+                            Image(systemName: "checklist")
+                                .font(.caption2)
+                            Text("\(task.completedStepsCount)/\(task.steps.count)")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(task.completedStepsCount == task.steps.count ? .green : .secondary)
+                    }
                 }
             }
 
@@ -221,7 +231,7 @@ struct SearchTaskRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(task.title), \(projectName), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")")
+        .accessibilityLabel("\(task.title), \(projectName), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")\(!task.steps.isEmpty ? ", \(task.completedStepsCount) of \(task.steps.count) steps done" : "")")
     }
 
     private var statusColor: Color {

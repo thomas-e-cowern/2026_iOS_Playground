@@ -13,6 +13,8 @@ struct EditTaskView: View {
     @State private var priority: TaskPriority
     @State private var status: TaskStatus
     @State private var recurrenceRule: RecurrenceRule
+    @State private var steps: [TaskStep]
+    @State private var newStepTitle = ""
 
     init(task: ProjectTask, projectID: UUID) {
         self.task = task
@@ -23,6 +25,7 @@ struct EditTaskView: View {
         _priority = State(initialValue: task.priority)
         _status = State(initialValue: task.status)
         _recurrenceRule = State(initialValue: task.recurrenceRule)
+        _steps = State(initialValue: task.steps)
     }
 
     var body: some View {
@@ -62,6 +65,40 @@ struct EditTaskView: View {
                         }
                     }
                 }
+
+                Section("Steps") {
+                    ForEach($steps) { $step in
+                        HStack {
+                            Button {
+                                step.isCompleted.toggle()
+                            } label: {
+                                Image(systemName: step.isCompleted ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(step.isCompleted ? .green : .gray)
+                            }
+                            .buttonStyle(.plain)
+
+                            TextField("Step", text: $step.title)
+                                .strikethrough(step.isCompleted)
+                        }
+                    }
+                    .onDelete { offsets in
+                        steps.remove(atOffsets: offsets)
+                    }
+                    .onMove { from, to in
+                        steps.move(fromOffsets: from, toOffset: to)
+                    }
+
+                    HStack {
+                        TextField("Add a step", text: $newStepTitle)
+                        Button {
+                            steps.append(TaskStep(title: newStepTitle))
+                            newStepTitle = ""
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                        }
+                        .disabled(newStepTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
             }
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
@@ -81,6 +118,7 @@ struct EditTaskView: View {
                         updated.priority = priority
                         updated.status = status
                         updated.recurrenceRule = recurrenceRule
+                        updated.steps = steps
                         store.updateTask(updated, in: projectID)
                         dismiss()
                     }

@@ -964,4 +964,108 @@ struct SwiftDataTests {
         #expect(originalTask?.title == "Keep Me")
         #expect(originalTask?.hasGeneratedNextOccurrence == true)
     }
+
+    // MARK: - Steps
+
+    @Test func taskDefaultStepsIsEmpty() {
+        let task = ProjectTask(title: "No steps", dueDate: .now)
+        #expect(task.steps.isEmpty)
+        #expect(task.completedStepsCount == 0)
+    }
+
+    @Test func taskStepsPersistedThroughSwiftData() {
+        let store = makeStore()
+        let project = Project(name: "Steps Test")
+        store.addProject(project)
+        let projectID = project.id
+        let steps = [
+            TaskStep(title: "Step A"),
+            TaskStep(title: "Step B", isCompleted: true)
+        ]
+        let task = ProjectTask(title: "With Steps", dueDate: .now, steps: steps)
+        store.addTask(task, to: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let savedTask = updatedProject.tasks.first { $0.id == task.id }!
+        #expect(savedTask.steps.count == 2)
+        #expect(savedTask.steps[0].title == "Step A")
+        #expect(savedTask.steps[0].isCompleted == false)
+        #expect(savedTask.steps[1].title == "Step B")
+        #expect(savedTask.steps[1].isCompleted == true)
+    }
+
+    @Test func completedStepsCount() {
+        let steps = [
+            TaskStep(title: "A", isCompleted: true),
+            TaskStep(title: "B", isCompleted: false),
+            TaskStep(title: "C", isCompleted: true)
+        ]
+        let task = ProjectTask(title: "Count", dueDate: .now, steps: steps)
+        #expect(task.completedStepsCount == 2)
+    }
+
+    @Test func stepsResetForRecurrence() {
+        let steps = [
+            TaskStep(title: "A", isCompleted: true),
+            TaskStep(title: "B", isCompleted: true)
+        ]
+        let task = ProjectTask(title: "Reset", dueDate: .now, steps: steps)
+        let reset = task.stepsResetForRecurrence
+        #expect(reset.count == 2)
+        #expect(reset[0].title == "A")
+        #expect(reset[0].isCompleted == false)
+        #expect(reset[1].title == "B")
+        #expect(reset[1].isCompleted == false)
+        #expect(reset[0].id != steps[0].id)
+        #expect(reset[1].id != steps[1].id)
+    }
+
+    @Test func recurringTaskWithStepsCopiesStepsReset() {
+        let store = makeStore()
+        let project = Project(name: "Recurrence Steps Test")
+        store.addProject(project)
+        let projectID = project.id
+        let calendar = Calendar.current
+        let dueDate = calendar.date(byAdding: .day, value: 1, to: .now)!
+        let steps = [
+            TaskStep(title: "S1", isCompleted: true),
+            TaskStep(title: "S2", isCompleted: true)
+        ]
+        let task = ProjectTask(
+            title: "Recurring With Steps",
+            dueDate: dueDate,
+            recurrenceRule: .weekly,
+            steps: steps
+        )
+        store.addTask(task, to: projectID)
+
+        task.status = .completed
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Recurring With Steps" }
+        #expect(newTask != nil)
+        #expect(newTask!.steps.count == 2)
+        #expect(newTask!.steps[0].title == "S1")
+        #expect(newTask!.steps[0].isCompleted == false)
+        #expect(newTask!.steps[1].title == "S2")
+        #expect(newTask!.steps[1].isCompleted == false)
+    }
+
+    @Test func editTaskStepsPersists() {
+        let store = makeStore()
+        let project = Project(name: "Edit Steps Test")
+        store.addProject(project)
+        let projectID = project.id
+        let task = ProjectTask(title: "Edit Me", dueDate: .now)
+        store.addTask(task, to: projectID)
+
+        task.steps = [TaskStep(title: "New Step")]
+        store.updateTask(task, in: projectID)
+
+        let updatedProject = store.projects.first { $0.id == projectID }!
+        let updatedTask = updatedProject.tasks.first { $0.id == task.id }!
+        #expect(updatedTask.steps.count == 1)
+        #expect(updatedTask.steps[0].title == "New Step")
+    }
 }

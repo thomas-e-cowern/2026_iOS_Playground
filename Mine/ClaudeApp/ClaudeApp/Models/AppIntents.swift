@@ -253,7 +253,8 @@ struct MarkTaskCompleteIntent: AppIntent {
                         details: matchingTask.details,
                         dueDate: nextDate,
                         priority: matchingTask.priority,
-                        recurrenceRule: matchingTask.recurrenceRule
+                        recurrenceRule: matchingTask.recurrenceRule,
+                        steps: matchingTask.stepsResetForRecurrence
                     )
                     matchingTask.hasGeneratedNextOccurrence = true
                     project.tasks.append(nextTask)

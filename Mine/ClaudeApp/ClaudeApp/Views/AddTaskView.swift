@@ -11,6 +11,8 @@ struct AddTaskView: View {
     @State private var dueDate = Date.now
     @State private var priority: TaskPriority = .medium
     @State private var recurrenceRule: RecurrenceRule = .none
+    @State private var steps: [TaskStep] = []
+    @State private var newStepTitle = ""
 
     var body: some View {
         NavigationStack {
@@ -41,6 +43,29 @@ struct AddTaskView: View {
                         }
                     }
                 }
+
+                Section("Steps") {
+                    ForEach($steps) { $step in
+                        TextField("Step", text: $step.title)
+                    }
+                    .onDelete { offsets in
+                        steps.remove(atOffsets: offsets)
+                    }
+                    .onMove { from, to in
+                        steps.move(fromOffsets: from, toOffset: to)
+                    }
+
+                    HStack {
+                        TextField("Add a step", text: $newStepTitle)
+                        Button {
+                            steps.append(TaskStep(title: newStepTitle))
+                            newStepTitle = ""
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                        }
+                        .disabled(newStepTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
             }
             .navigationTitle("New Task")
             .navigationBarTitleDisplayMode(.inline)
@@ -58,7 +83,8 @@ struct AddTaskView: View {
                             details: details,
                             dueDate: dueDate,
                             priority: priority,
-                            recurrenceRule: recurrenceRule
+                            recurrenceRule: recurrenceRule,
+                            steps: steps
                         )
                         store.addTask(task, to: projectID)
                         dismiss()

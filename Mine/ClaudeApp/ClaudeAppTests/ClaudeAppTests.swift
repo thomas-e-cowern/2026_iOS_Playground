@@ -160,3 +160,60 @@ struct RecurrenceRuleTests {
         #expect(calendar.isDate(next, inSameDayAs: expected))
     }
 }
+// MARK: - TaskStep Tests
+
+@MainActor
+struct TaskStepTests {
+
+    @Test func defaultInit() {
+        let step = TaskStep(title: "Do something")
+        #expect(step.title == "Do something")
+        #expect(step.isCompleted == false)
+    }
+
+    @Test func customInit() {
+        let id = UUID()
+        let step = TaskStep(id: id, title: "Custom", isCompleted: true)
+        #expect(step.id == id)
+        #expect(step.title == "Custom")
+        #expect(step.isCompleted == true)
+    }
+
+    @Test func equatable() {
+        let id = UUID()
+        let a = TaskStep(id: id, title: "Same", isCompleted: false)
+        let b = TaskStep(id: id, title: "Same", isCompleted: false)
+        #expect(a == b)
+    }
+
+    @Test func notEqualWhenDifferentCompletion() {
+        let id = UUID()
+        let a = TaskStep(id: id, title: "Same", isCompleted: false)
+        let b = TaskStep(id: id, title: "Same", isCompleted: true)
+        #expect(a != b)
+    }
+
+    @Test func hashable() {
+        let step = TaskStep(title: "Hash me")
+        let set: Set<TaskStep> = [step, step]
+        #expect(set.count == 1)
+    }
+
+    @Test func codableRoundTrip() throws {
+        let original = TaskStep(title: "Encode me", isCompleted: true)
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(TaskStep.self, from: data)
+        #expect(decoded == original)
+    }
+
+    @Test func codableArrayRoundTrip() throws {
+        let steps = [
+            TaskStep(title: "Step 1"),
+            TaskStep(title: "Step 2", isCompleted: true)
+        ]
+        let data = try JSONEncoder().encode(steps)
+        let decoded = try JSONDecoder().decode([TaskStep].self, from: data)
+        #expect(decoded == steps)
+    }
+}
+

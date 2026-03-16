@@ -82,6 +82,18 @@ enum ProjectCategory: String, Codable, CaseIterable {
     }
 }
 
+struct TaskStep: Codable, Identifiable, Equatable, Hashable {
+    var id: UUID
+    var title: String
+    var isCompleted: Bool
+
+    init(id: UUID = UUID(), title: String, isCompleted: Bool = false) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+    }
+}
+
 @Model
 class ProjectTask {
     var id: UUID
@@ -93,6 +105,7 @@ class ProjectTask {
     var isArchived: Bool
     var recurrenceRule: RecurrenceRule
     var hasGeneratedNextOccurrence: Bool
+    var steps: [TaskStep]
     var project: Project?
 
     init(
@@ -103,7 +116,8 @@ class ProjectTask {
         status: TaskStatus = .notStarted,
         priority: TaskPriority = .medium,
         isArchived: Bool = false,
-        recurrenceRule: RecurrenceRule = .none
+        recurrenceRule: RecurrenceRule = .none,
+        steps: [TaskStep] = []
     ) {
         self.id = id
         self.title = title
@@ -114,6 +128,15 @@ class ProjectTask {
         self.isArchived = isArchived
         self.recurrenceRule = recurrenceRule
         self.hasGeneratedNextOccurrence = false
+        self.steps = steps
+    }
+
+    var completedStepsCount: Int {
+        steps.filter { $0.isCompleted }.count
+    }
+
+    var stepsResetForRecurrence: [TaskStep] {
+        steps.map { TaskStep(title: $0.title) }
     }
 }
 

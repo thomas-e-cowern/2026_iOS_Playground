@@ -129,7 +129,8 @@ class ProjectStore {
             details: task.details,
             dueDate: nextDate,
             priority: task.priority,
-            recurrenceRule: task.recurrenceRule
+            recurrenceRule: task.recurrenceRule,
+            steps: task.stepsResetForRecurrence
         )
 
         task.hasGeneratedNextOccurrence = true
