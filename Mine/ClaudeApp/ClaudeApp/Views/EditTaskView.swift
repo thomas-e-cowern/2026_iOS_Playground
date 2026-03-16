@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 struct EditTaskView: View {
     @Environment(ProjectStore.self) private var store
@@ -67,6 +68,7 @@ struct EditTaskView: View {
                 }
 
                 Section("Steps") {
+                    TipView(AddStepTip())
                     ForEach($steps) { $step in
                         HStack {
                             Button {
