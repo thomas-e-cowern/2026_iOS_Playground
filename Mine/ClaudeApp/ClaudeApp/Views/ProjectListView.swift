@@ -21,28 +21,13 @@ struct ProjectListView: View {
                             NavigationLink(value: project.id) {
                                 ProjectRow(project: project)
                             }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    projectToDelete = project
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-
-                                Button {
-                                    store.archiveProject(project.id)
-                                } label: {
-                                    Label("Archive", systemImage: "archivebox")
-                                }
-                                .tint(.orange)
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button {
-                                    projectToEdit = project
-                                } label: {
-                                    Label("Edit", systemImage: "pencil")
-                                }
-                                .tint(.blue)
-                            }
+                            .rowSwipeActions(onDelete: {
+                                projectToDelete = project
+                            }, onArchive: {
+                                store.archiveProject(project.id)
+                            }, onEdit: {
+                                projectToEdit = project
+                            })
                         }
                     }
                     .listStyle(.insetGrouped)

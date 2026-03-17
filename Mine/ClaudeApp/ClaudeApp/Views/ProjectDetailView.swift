@@ -171,31 +171,13 @@ struct ProjectDetailView: View {
                 TipView(swipeTip)
                 ForEach(sortedTasks) { task in
                     TaskRow(task: task, projectID: project.id)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                taskToDelete = task
-                                swipeTip.invalidate(reason: .actionPerformed)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-
-                            Button {
-                                store.archiveTask(task.id, in: project.id)
-                                swipeTip.invalidate(reason: .actionPerformed)
-                            } label: {
-                                Label("Archive", systemImage: "archivebox")
-                            }
-                            .tint(.orange)
-                        }
-                        .swipeActions(edge: .leading) {
-                            Button {
-                                editingTaskID = task.id
-                                swipeTip.invalidate(reason: .actionPerformed)
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .tint(.blue)
-                        }
+                        .rowSwipeActions(onDelete: {
+                            taskToDelete = task
+                        }, onArchive: {
+                            store.archiveTask(task.id, in: project.id)
+                        }, onEdit: {
+                            editingTaskID = task.id
+                        })
                 }
             }
         }
