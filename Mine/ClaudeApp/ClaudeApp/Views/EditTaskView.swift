@@ -105,11 +105,7 @@ struct EditTaskView: View {
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
+                CancelToolbarItem()
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {

@@ -65,11 +65,7 @@ struct AddProjectView: View {
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
+                CancelToolbarItem()
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {

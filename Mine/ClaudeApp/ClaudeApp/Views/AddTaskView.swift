@@ -52,11 +52,7 @@ struct AddTaskView: View {
             .navigationTitle("New Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
+                CancelToolbarItem()
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {

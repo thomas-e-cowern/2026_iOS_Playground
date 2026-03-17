@@ -77,11 +77,7 @@ struct EditProjectView: View {
             .navigationTitle("Edit Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
+                CancelToolbarItem()
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
