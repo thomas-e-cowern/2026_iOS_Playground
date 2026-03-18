@@ -203,6 +203,37 @@ class ProjectStore {
         return results
     }
 
+    // MARK: - Export / Import
+
+    func exportAllAsJSON() throws -> Data {
+        let backup = AppBackup(projects: projects)
+        return try AppBackup.encoder.encode(backup)
+    }
+
+    func exportToTemporaryFile() throws -> URL {
+        let data = try exportAllAsJSON()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: .now)
+        let fileName = "ProjectSimple_Backup_\(dateString).json"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try data.write(to: url)
+        return url
+    }
+
+    func importFromJSON(_ data: Data) throws -> Int {
+        let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
+        var importedCount = 0
+        for exportableProject in backup.projects {
+            let project = exportableProject.toProject()
+            modelContext.insert(project)
+            importedCount += 1
+        }
+        save()
+        scheduleNotifications()
+        return importedCount
+    }
+
     // MARK: - Preview Helper
 
     static func preview() -> ProjectStore {

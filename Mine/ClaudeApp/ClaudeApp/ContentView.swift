@@ -39,6 +39,7 @@ struct ContentView: View {
                 ArchiveView()
             }
         }
+        .tabViewStyle(.sidebarAdaptable)
         .alert("Error", isPresented: Binding(
             get: { store.errorMessage != nil },
             set: { if !$0 { store.errorMessage = nil } }
