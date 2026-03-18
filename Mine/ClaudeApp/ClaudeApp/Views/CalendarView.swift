@@ -2,20 +2,25 @@ import SwiftUI
 
 struct CalendarView: View {
     @Environment(ProjectStore.self) private var store
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var displayedMonth = Date.now
     @State private var selectedDate: Date? = nil
 
     private let calendar = Calendar.current
     private let daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
+    private var dayCellHeight: CGFloat {
+        sizeClass == .regular ? 56 : 44
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                monthHeader
-                dayOfWeekHeader
-                calendarGrid
-                Divider()
-                taskListForSelectedDate
+            Group {
+                if sizeClass == .regular {
+                    wideLayout
+                } else {
+                    compactLayout
+                }
             }
             .navigationTitle("Calendar")
             .navigationDestination(for: UUID.self) { projectID in
@@ -23,6 +28,37 @@ struct CalendarView: View {
                     ProjectDetailView(project: project)
                 }
             }
+        }
+    }
+
+    // MARK: - Layout Variants
+
+    private var compactLayout: some View {
+        VStack(spacing: 0) {
+            monthHeader
+            dayOfWeekHeader
+            calendarGrid
+            Divider()
+            taskListForSelectedDate
+        }
+    }
+
+    private var wideLayout: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                monthHeader
+                dayOfWeekHeader
+                calendarGrid
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider()
+
+            VStack(spacing: 0) {
+                taskListForSelectedDate
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -84,7 +120,7 @@ struct CalendarView: View {
                     dayCell(for: date)
                 } else {
                     Color.clear
-                        .frame(height: 44)
+                        .frame(height: dayCellHeight)
                 }
             }
         }
@@ -120,7 +156,7 @@ struct CalendarView: View {
                         .frame(height: 5)
                 }
             }
-            .frame(height: 44)
+            .frame(height: dayCellHeight)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 8)
