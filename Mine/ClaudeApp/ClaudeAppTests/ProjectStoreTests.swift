@@ -1068,4 +1068,198 @@ struct SwiftDataTests {
         #expect(updatedTask.steps.count == 1)
         #expect(updatedTask.steps[0].title == "New Step")
     }
+
+    // MARK: - Export / Import
+
+    @Test func exportProducesValidJSON() throws {
+        let store = makeStore()
+        let project = Project(name: "Export Test", descriptionText: "Desc", colorName: "purple", category: .work)
+        store.addProject(project)
+        let task = ProjectTask(title: "Task A", details: "Details A", dueDate: .now, status: .inProgress, priority: .high)
+        store.addTask(task, to: project.id)
+
+        let data = try store.exportAllAsJSON()
+        let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
+
+        #expect(backup.projects.count == 2) // sample + new
+        let exported = backup.projects.first { $0.name == "Export Test" }
+        #expect(exported != nil)
+        #expect(exported?.descriptionText == "Desc")
+        #expect(exported?.category == .work)
+        #expect(exported?.colorName == "purple")
+        #expect(exported?.tasks.count == 1)
+        #expect(exported?.tasks[0].title == "Task A")
+        #expect(exported?.tasks[0].details == "Details A")
+        #expect(exported?.tasks[0].status == .inProgress)
+        #expect(exported?.tasks[0].priority == .high)
+    }
+
+    @Test func exportRoundTripPreservesSteps() throws {
+        let store = makeStore()
+        let project = Project(name: "Steps Export")
+        store.addProject(project)
+        let steps = [TaskStep(title: "S1", isCompleted: true), TaskStep(title: "S2")]
+        let task = ProjectTask(title: "With Steps", dueDate: .now, steps: steps)
+        store.addTask(task, to: project.id)
+
+        let data = try store.exportAllAsJSON()
+        let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
+
+        let exported = backup.projects.first { $0.name == "Steps Export" }!
+        #expect(exported.tasks[0].steps.count == 2)
+        #expect(exported.tasks[0].steps[0].title == "S1")
+        #expect(exported.tasks[0].steps[0].isCompleted == true)
+        #expect(exported.tasks[0].steps[1].title == "S2")
+        #expect(exported.tasks[0].steps[1].isCompleted == false)
+    }
+
+    @Test func exportRoundTripPreservesRecurrenceRule() throws {
+        let store = makeStore()
+        let project = Project(name: "Recurrence Export")
+        store.addProject(project)
+        let task = ProjectTask(title: "Recurring", dueDate: .now, recurrenceRule: .weekly)
+        store.addTask(task, to: project.id)
+
+        let data = try store.exportAllAsJSON()
+        let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
+
+        let exported = backup.projects.first { $0.name == "Recurrence Export" }!
+        #expect(exported.tasks[0].recurrenceRule == .weekly)
+    }
+
+    @Test func importCreatesProjectsAndTasks() throws {
+        let store = makeStore()
+        let initialCount = store.projects.count
+
+        // Build test JSON manually
+        let json = """
+        {
+          "exportDate": "2025-01-01T00:00:00Z",
+          "projects": [
+            {
+              "id": "\(UUID().uuidString)",
+              "name": "Imported Project",
+              "descriptionText": "From backup",
+              "startDate": "2025-01-01T00:00:00Z",
+              "endDate": "2025-06-01T00:00:00Z",
+              "colorName": "green",
+              "category": "Personal",
+              "isArchived": false,
+              "tasks": [
+                {
+                  "id": "\(UUID().uuidString)",
+                  "title": "Imported Task",
+                  "details": "Task details",
+                  "dueDate": "2025-03-01T00:00:00Z",
+                  "status": "Not Started",
+                  "priority": "Medium",
+                  "isArchived": false,
+                  "recurrenceRule": "None",
+                  "hasGeneratedNextOccurrence": false,
+                  "steps": [
+                    { "id": "\(UUID().uuidString)", "title": "Step 1", "isCompleted": false }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let count = try store.importFromJSON(data)
+
+        #expect(count == 1)
+        #expect(store.projects.count == initialCount + 1)
+        let imported = store.projects.first { $0.name == "Imported Project" }
+        #expect(imported != nil)
+        #expect(imported?.descriptionText == "From backup")
+        #expect(imported?.colorName == "green")
+        #expect(imported?.category == .personal)
+        #expect(imported?.tasks.count == 1)
+        #expect(imported?.tasks[0].title == "Imported Task")
+        #expect(imported?.tasks[0].steps.count == 1)
+        #expect(imported?.tasks[0].steps[0].title == "Step 1")
+    }
+
+    @Test func importIsAdditive() throws {
+        let store = makeStore()
+        let initialCount = store.projects.count
+
+        let data = try store.exportAllAsJSON()
+        let _ = try store.importFromJSON(data)
+
+        // Import should add duplicates, not replace
+        #expect(store.projects.count == initialCount * 2)
+    }
+
+    @Test func importInvalidJSONThrows() {
+        let store = makeStore()
+        let badData = "not json".data(using: .utf8)!
+        #expect(throws: (any Error).self) {
+            try store.importFromJSON(badData)
+        }
+    }
+
+    @Test func exportToTemporaryFileCreatesFile() throws {
+        let store = makeStore()
+        let url = try store.exportToTemporaryFile()
+        #expect(FileManager.default.fileExists(atPath: url.path))
+        #expect(url.pathExtension == "json")
+
+        // Verify file contents are valid
+        let data = try Data(contentsOf: url)
+        let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
+        #expect(!backup.projects.isEmpty)
+
+        // Clean up
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    @Test func exportImportFullRoundTrip() throws {
+        let store = makeStore()
+        // Add a project with varied data
+        let project = Project(name: "Round Trip", descriptionText: "Full test", colorName: "red", category: .health, isArchived: true)
+        store.addProject(project)
+        let task = ProjectTask(
+            title: "RT Task",
+            details: "RT Details",
+            dueDate: .now,
+            status: .completed,
+            priority: .low,
+            isArchived: true,
+            recurrenceRule: .daily,
+            steps: [TaskStep(title: "RT Step", isCompleted: true)]
+        )
+        store.addTask(task, to: project.id)
+
+        // Export
+        let data = try store.exportAllAsJSON()
+
+        // Clear store
+        for p in store.projects { store.deleteProject(p.id) }
+        #expect(store.projects.isEmpty)
+
+        // Import
+        let count = try store.importFromJSON(data)
+        #expect(count >= 1)
+
+        let restored = store.projects.first { $0.name == "Round Trip" }
+        #expect(restored != nil)
+        #expect(restored?.descriptionText == "Full test")
+        #expect(restored?.category == .health)
+        #expect(restored?.colorName == "red")
+        #expect(restored?.isArchived == true)
+        #expect(restored?.tasks.count == 1)
+
+        let restoredTask = restored?.tasks[0]
+        #expect(restoredTask?.title == "RT Task")
+        #expect(restoredTask?.details == "RT Details")
+        #expect(restoredTask?.status == .completed)
+        #expect(restoredTask?.priority == .low)
+        #expect(restoredTask?.isArchived == true)
+        #expect(restoredTask?.recurrenceRule == .daily)
+        #expect(restoredTask?.steps.count == 1)
+        #expect(restoredTask?.steps[0].title == "RT Step")
+        #expect(restoredTask?.steps[0].isCompleted == true)
+    }
 }
