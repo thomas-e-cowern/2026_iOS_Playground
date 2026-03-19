@@ -23,6 +23,25 @@ struct CalendarView: View {
                 }
             }
             .navigationTitle("Calendar")
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        store.undo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .disabled(!store.undoManager.canUndo)
+                    .accessibilityLabel("Undo")
+
+                    Button {
+                        store.redo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.forward")
+                    }
+                    .disabled(!store.undoManager.canRedo)
+                    .accessibilityLabel("Redo")
+                }
+            }
             .navigationDestination(for: UUID.self) { projectID in
                 if let project = store.projects.first(where: { $0.id == projectID }) {
                     ProjectDetailView(project: project)

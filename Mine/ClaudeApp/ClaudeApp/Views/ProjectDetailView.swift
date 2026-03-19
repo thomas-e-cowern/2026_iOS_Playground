@@ -22,6 +22,24 @@ struct ProjectDetailView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(currentProject.name)
         .toolbar {
+            ToolbarItemGroup(placement: .topBarLeading) {
+                Button {
+                    store.undo()
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                }
+                .disabled(!store.undoManager.canUndo)
+                .accessibilityLabel("Undo")
+
+                Button {
+                    store.redo()
+                } label: {
+                    Image(systemName: "arrow.uturn.forward")
+                }
+                .disabled(!store.undoManager.canRedo)
+                .accessibilityLabel("Redo")
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {

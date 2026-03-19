@@ -63,7 +63,23 @@ struct ProjectListView: View {
                     }
                     .accessibilityLabel("Settings")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        store.undo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .disabled(!store.undoManager.canUndo)
+                    .accessibilityLabel("Undo")
+
+                    Button {
+                        store.redo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.forward")
+                    }
+                    .disabled(!store.undoManager.canRedo)
+                    .accessibilityLabel("Redo")
+
                     Button {
                         showAddProject = true
                     } label: {
