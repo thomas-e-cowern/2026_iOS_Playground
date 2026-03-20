@@ -20,10 +20,20 @@ private let _testContainer: ModelContainer = {
 struct SwiftDataTests {
 
     private func makeStore() -> ProjectStore {
-        // Clear all existing data so each test starts fresh
+        // Clear all existing data so each test starts fresh.
+        // Delete objects individually rather than using batch delete
+        // (context.delete(model:)) which triggers CoreData constraint
+        // violations on the mandatory ProjectTask.project inverse.
         let context = _testContainer.mainContext
-        try? context.delete(model: ProjectTask.self)
-        try? context.delete(model: Project.self)
+        let projects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
+        for project in projects {
+            let tasks = project.tasks
+            project.tasks.removeAll()
+            for task in tasks {
+                context.delete(task)
+            }
+            context.delete(project)
+        }
         try? context.save()
         return ProjectStore(modelContext: context)
     }
