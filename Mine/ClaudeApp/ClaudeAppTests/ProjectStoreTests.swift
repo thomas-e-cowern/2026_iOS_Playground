@@ -1272,4 +1272,187 @@ struct SwiftDataTests {
         #expect(restoredTask?.steps[0].title == "RT Step")
         #expect(restoredTask?.steps[0].isCompleted == true)
     }
+
+    // MARK: - Performance Tests
+
+    /// Creates a store populated with the specified number of projects,
+    /// each containing the specified number of tasks with 2 steps each.
+    private func makePopulatedStore(projectCount: Int, tasksPerProject: Int) -> ProjectStore {
+        let store = makeStore()
+        let calendar = Calendar.current
+        for p in 0..<projectCount {
+            let tasks = (0..<tasksPerProject).map { t in
+                ProjectTask(
+                    title: "Task \(t)",
+                    details: "Details for task \(t) in project \(p)",
+                    dueDate: calendar.date(byAdding: .day, value: t, to: .now)!,
+                    status: TaskStatus.allCases[t % 3],
+                    priority: TaskPriority.allCases[t % 3],
+                    steps: [
+                        TaskStep(title: "Step A"),
+                        TaskStep(title: "Step B", isCompleted: true)
+                    ]
+                )
+            }
+            let project = Project(
+                name: "Project \(p)",
+                descriptionText: "Description \(p)",
+                tasks: tasks,
+                colorName: ["blue", "red", "green", "purple"][p % 4],
+                category: ProjectCategory.allCases[p % ProjectCategory.allCases.count]
+            )
+            store.addProject(project)
+        }
+        return store
+    }
+
+    @Test func perfAddProject() {
+        let store = makeStore()
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            for i in 0..<50 {
+                store.addProject(Project(name: "Perf \(i)"))
+            }
+        }
+        // Adding 50 empty projects should complete well under 5 seconds
+        #expect(elapsed < .seconds(5), "Adding 50 projects took \(elapsed)")
+    }
+
+    @Test func perfAddTasksToProject() {
+        let store = makeStore()
+        let projectID = store.projects[0].id
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            for i in 0..<100 {
+                let task = ProjectTask(
+                    title: "Perf Task \(i)",
+                    dueDate: .now,
+                    steps: [TaskStep(title: "Step 1"), TaskStep(title: "Step 2")]
+                )
+                store.addTask(task, to: projectID)
+            }
+        }
+        // Adding 100 tasks with steps should complete well under 5 seconds
+        #expect(elapsed < .seconds(5), "Adding 100 tasks took \(elapsed)")
+    }
+
+    @Test func perfUndoRedoSmallDataSet() {
+        // 5 projects × 10 tasks = 50 tasks total
+        let store = makePopulatedStore(projectCount: 5, tasksPerProject: 10)
+        // Perform a mutation to populate the undo stack
+        store.addProject(Project(name: "Undo Target"))
+        let clock = ContinuousClock()
+        let undoElapsed = clock.measure {
+            store.undo()
+        }
+        let redoElapsed = clock.measure {
+            store.redo()
+        }
+        #expect(undoElapsed < .seconds(2), "Undo (50 tasks) took \(undoElapsed)")
+        #expect(redoElapsed < .seconds(2), "Redo (50 tasks) took \(redoElapsed)")
+    }
+
+    @Test func perfUndoRedoLargeDataSet() {
+        // 20 projects × 20 tasks = 400 tasks total
+        let store = makePopulatedStore(projectCount: 20, tasksPerProject: 20)
+        store.addProject(Project(name: "Undo Target"))
+        let clock = ContinuousClock()
+        let undoElapsed = clock.measure {
+            store.undo()
+        }
+        let redoElapsed = clock.measure {
+            store.redo()
+        }
+        #expect(undoElapsed < .seconds(5), "Undo (400 tasks) took \(undoElapsed)")
+        #expect(redoElapsed < .seconds(5), "Redo (400 tasks) took \(redoElapsed)")
+    }
+
+    @Test func perfExportJSON() throws {
+        // 10 projects × 15 tasks = 150 tasks
+        let store = makePopulatedStore(projectCount: 10, tasksPerProject: 15)
+        let clock = ContinuousClock()
+        var data = Data()
+        let elapsed = clock.measure {
+            data = (try? store.exportAllAsJSON()) ?? Data()
+        }
+        #expect(data.count > 0)
+        #expect(elapsed < .seconds(2), "Export (150 tasks) took \(elapsed)")
+    }
+
+    @Test func perfImportJSON() throws {
+        // Export a populated store, then import into an empty one
+        let source = makePopulatedStore(projectCount: 10, tasksPerProject: 15)
+        let data = try source.exportAllAsJSON()
+        let store = makeStore()
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            _ = try? store.importFromJSON(data)
+        }
+        // Should have the sample project + 10 imported
+        #expect(store.projects.count >= 10)
+        #expect(elapsed < .seconds(3), "Import (150 tasks) took \(elapsed)")
+    }
+
+    @Test func perfRefreshProjectsLargeDataSet() {
+        // 20 projects × 20 tasks = 400 tasks
+        let store = makePopulatedStore(projectCount: 20, tasksPerProject: 20)
+        let clock = ContinuousClock()
+        // Measure 100 consecutive fetches
+        let elapsed = clock.measure {
+            for _ in 0..<100 {
+                _ = store.activeProjects
+            }
+        }
+        #expect(elapsed < .seconds(2), "100 activeProjects fetches (400 tasks) took \(elapsed)")
+    }
+
+    @Test func perfCalendarTaskLookup() {
+        // 10 projects × 30 tasks = 300 tasks spread across dates
+        let store = makePopulatedStore(projectCount: 10, tasksPerProject: 30)
+        let clock = ContinuousClock()
+        // Look up tasks for 30 different days
+        let elapsed = clock.measure {
+            let calendar = Calendar.current
+            for dayOffset in 0..<30 {
+                let date = calendar.date(byAdding: .day, value: dayOffset, to: .now)!
+                _ = store.tasks(for: date)
+            }
+        }
+        #expect(elapsed < .seconds(2), "30 calendar lookups (300 tasks) took \(elapsed)")
+    }
+
+    @Test func perfOverdueTasksLookup() {
+        // Create tasks with past due dates
+        let store = makeStore()
+        let calendar = Calendar.current
+        let project = Project(name: "Overdue Test")
+        store.addProject(project)
+        for i in 0..<200 {
+            let task = ProjectTask(
+                title: "Overdue \(i)",
+                dueDate: calendar.date(byAdding: .day, value: -(i + 1), to: .now)!
+            )
+            store.addTask(task, to: project.id)
+        }
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            for _ in 0..<50 {
+                _ = store.overdueTasks()
+            }
+        }
+        #expect(elapsed < .seconds(2), "50 overdue lookups (200 overdue tasks) took \(elapsed)")
+    }
+
+    @Test func perfSnapshotCreation() {
+        // Measure the cost of pushUndo with a large data set
+        // 20 projects × 20 tasks = 400 tasks
+        let store = makePopulatedStore(projectCount: 20, tasksPerProject: 20)
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            for _ in 0..<10 {
+                store.pushUndo()
+            }
+        }
+        #expect(elapsed < .seconds(2), "10 snapshots (400 tasks) took \(elapsed)")
+    }
 }
