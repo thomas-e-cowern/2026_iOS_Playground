@@ -30,7 +30,7 @@ struct CalendarView: View {
                     } label: {
                         Image(systemName: "arrow.uturn.backward")
                     }
-                    .disabled(!store.undoManager.canUndo)
+                    .disabled(!store.canUndo)
                     .accessibilityLabel("Undo")
 
                     Button {
@@ -38,7 +38,7 @@ struct CalendarView: View {
                     } label: {
                         Image(systemName: "arrow.uturn.forward")
                     }
-                    .disabled(!store.undoManager.canRedo)
+                    .disabled(!store.canRedo)
                     .accessibilityLabel("Redo")
                 }
             }

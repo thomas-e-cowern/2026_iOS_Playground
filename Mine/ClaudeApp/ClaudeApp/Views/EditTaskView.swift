@@ -109,6 +109,7 @@ struct EditTaskView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        store.pushUndo()
                         let updated = task
                         updated.title = title
                         updated.details = details

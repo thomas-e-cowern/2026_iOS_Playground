@@ -72,6 +72,7 @@ struct TaskRow: View {
     }
 
     private func cycleStatus() {
+        store.pushUndo()
         let updated = task
         switch task.status {
         case .notStarted: updated.status = .inProgress

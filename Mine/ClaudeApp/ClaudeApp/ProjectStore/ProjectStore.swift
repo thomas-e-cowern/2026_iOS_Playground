@@ -7,10 +7,19 @@ import WidgetKit
 @Observable
 class ProjectStore {
     let modelContext: ModelContext
-    let undoManager = UndoManager()
     var notificationManager: NotificationManager?
     private(set) var projects: [Project] = []
     var errorMessage: String?
+
+    // MARK: - Snapshot-based Undo / Redo
+
+    /// A lightweight snapshot of all projects, used for undo/redo.
+    private var undoStack: [[ExportableProject]] = []
+    private var redoStack: [[ExportableProject]] = []
+    private static let maxUndoLevels = 30
+
+    var canUndo: Bool { !undoStack.isEmpty }
+    var canRedo: Bool { !redoStack.isEmpty }
 
     var activeProjects: [Project] {
         projects.filter { !$0.isArchived }
@@ -27,7 +36,6 @@ class ProjectStore {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         loadSampleDataIfNeeded()
-        modelContext.undoManager = undoManager
         refreshProjects()
     }
 
@@ -36,18 +44,7 @@ class ProjectStore {
         projects = (try? modelContext.fetch(descriptor)) ?? []
     }
 
-    /// Processes pending changes without an explicit save, letting SwiftData
-    /// autosave handle persistence. This keeps the undo manager's stack intact.
-    private func applyChanges() {
-        modelContext.processPendingChanges()
-        refreshProjects()
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    /// Force-saves to the persistent store. Use only when undo tracking is
-    /// disabled (e.g. import, sample data) or after undo/redo to commit.
-    private func forceSave() {
-        modelContext.processPendingChanges()
+    private func save() {
         do {
             try modelContext.save()
         } catch {
@@ -55,6 +52,40 @@ class ProjectStore {
         }
         refreshProjects()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Takes a snapshot of the current state before a mutation.
+    /// Call this before directly modifying a SwiftData object's properties.
+    func pushUndo() {
+        let snapshot = projects.map { ExportableProject(from: $0) }
+        undoStack.append(snapshot)
+        if undoStack.count > Self.maxUndoLevels {
+            undoStack.removeFirst()
+        }
+        redoStack.removeAll()
+    }
+
+    /// Replaces all persisted data with the given snapshot.
+    private func restore(from snapshot: [ExportableProject]) {
+        // Detach tasks from projects by clearing the relationship array,
+        // then delete everything. This avoids the "mandatory OTO nullify
+        // inverse" batch-delete constraint violation in CoreData.
+        for project in projects {
+            let tasks = project.tasks
+            project.tasks.removeAll()
+            for task in tasks {
+                modelContext.delete(task)
+            }
+        }
+        for project in projects {
+            modelContext.delete(project)
+        }
+        // Re-insert from snapshot
+        for exportable in snapshot {
+            let project = exportable.toProject()
+            modelContext.insert(project)
+        }
+        save()
     }
 
     private func scheduleNotifications() {
@@ -68,61 +99,70 @@ class ProjectStore {
     // MARK: - Undo / Redo
 
     func undo() {
-        guard undoManager.canUndo else { return }
-        undoManager.undo()
-        forceSave()
+        guard let snapshot = undoStack.popLast() else { return }
+        // Save current state to redo stack before restoring
+        let currentSnapshot = projects.map { ExportableProject(from: $0) }
+        redoStack.append(currentSnapshot)
+        restore(from: snapshot)
         scheduleNotifications()
     }
 
     func redo() {
-        guard undoManager.canRedo else { return }
-        undoManager.redo()
-        forceSave()
+        guard let snapshot = redoStack.popLast() else { return }
+        // Save current state to undo stack before restoring
+        let currentSnapshot = projects.map { ExportableProject(from: $0) }
+        undoStack.append(currentSnapshot)
+        restore(from: snapshot)
         scheduleNotifications()
     }
 
     // MARK: - Project Operations
 
     func addProject(_ project: Project) {
+        pushUndo()
         modelContext.insert(project)
-        applyChanges()
+        save()
         scheduleNotifications()
     }
 
     func updateProject(_ project: Project) {
-        applyChanges()
+        save()
         scheduleNotifications()
     }
 
     func deleteProject(at offsets: IndexSet) {
+        pushUndo()
         let active = activeProjects
         for index in offsets {
             modelContext.delete(active[index])
         }
-        applyChanges()
+        save()
         scheduleNotifications()
     }
 
     func deleteProject(_ projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }) {
+            pushUndo()
             modelContext.delete(project)
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
 
     func archiveProject(_ projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }) {
+            pushUndo()
             project.isArchived = true
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
 
     func unarchiveProject(_ projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }) {
+            pushUndo()
             project.isArchived = false
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
@@ -131,15 +171,16 @@ class ProjectStore {
 
     func addTask(_ task: ProjectTask, to projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }) {
+            pushUndo()
             project.tasks.append(task)
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
 
     func updateTask(_ task: ProjectTask, in projectID: UUID) {
         generateNextOccurrenceIfNeeded(for: task, in: projectID)
-        applyChanges()
+        save()
         scheduleNotifications()
     }
 
@@ -169,8 +210,9 @@ class ProjectStore {
     func deleteTask(_ taskID: UUID, from projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }),
            let task = project.tasks.first(where: { $0.id == taskID }) {
+            pushUndo()
             modelContext.delete(task)
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
@@ -178,8 +220,9 @@ class ProjectStore {
     func archiveTask(_ taskID: UUID, in projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }),
            let task = project.tasks.first(where: { $0.id == taskID }) {
+            pushUndo()
             task.isArchived = true
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
@@ -187,8 +230,9 @@ class ProjectStore {
     func unarchiveTask(_ taskID: UUID, in projectID: UUID) {
         if let project = projects.first(where: { $0.id == projectID }),
            let task = project.tasks.first(where: { $0.id == taskID }) {
+            pushUndo()
             task.isArchived = false
-            applyChanges()
+            save()
         }
         scheduleNotifications()
     }
@@ -251,10 +295,6 @@ class ProjectStore {
     }
 
     func importFromJSON(_ data: Data) throws -> Int {
-        // Disable undo during bulk import to avoid filling the undo stack
-        modelContext.undoManager = nil
-        defer { modelContext.undoManager = undoManager }
-
         let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
         var importedCount = 0
         for exportableProject in backup.projects {
@@ -262,7 +302,10 @@ class ProjectStore {
             modelContext.insert(project)
             importedCount += 1
         }
-        forceSave()
+        save()
+        // Clear undo/redo stacks — import is not undoable
+        undoStack.removeAll()
+        redoStack.removeAll()
         scheduleNotifications()
         return importedCount
     }
@@ -344,6 +387,6 @@ class ProjectStore {
         )
 
         modelContext.insert(gettingStarted)
-        forceSave()
+        save()
     }
 }

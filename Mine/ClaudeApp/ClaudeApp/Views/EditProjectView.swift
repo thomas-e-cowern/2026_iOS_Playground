@@ -81,6 +81,7 @@ struct EditProjectView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        store.pushUndo()
                         let updated = project
                         updated.name = name
                         updated.descriptionText = description

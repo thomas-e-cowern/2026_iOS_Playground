@@ -39,7 +39,7 @@ struct ArchiveView: View {
                     } label: {
                         Image(systemName: "arrow.uturn.backward")
                     }
-                    .disabled(!store.undoManager.canUndo)
+                    .disabled(!store.canUndo)
                     .accessibilityLabel("Undo")
 
                     Button {
@@ -47,7 +47,7 @@ struct ArchiveView: View {
                     } label: {
                         Image(systemName: "arrow.uturn.forward")
                     }
-                    .disabled(!store.undoManager.canRedo)
+                    .disabled(!store.canRedo)
                     .accessibilityLabel("Redo")
                 }
             }
@@ -168,6 +168,7 @@ struct ArchiveView: View {
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button {
+                                        store.pushUndo()
                                         let updated = task
                                         updated.status = .inProgress
                                         store.updateTask(updated, in: project.id)

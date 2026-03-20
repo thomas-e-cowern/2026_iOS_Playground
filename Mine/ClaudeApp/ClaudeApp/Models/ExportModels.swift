@@ -27,6 +27,7 @@ struct ExportableTask: Codable {
 
     func toProjectTask() -> ProjectTask {
         let task = ProjectTask(
+            id: id,
             title: title,
             details: details,
             dueDate: dueDate,
@@ -67,6 +68,7 @@ struct ExportableProject: Codable {
     func toProject() -> Project {
         let tasks = tasks.map { $0.toProjectTask() }
         return Project(
+            id: id,
             name: name,
             descriptionText: descriptionText,
             startDate: startDate,
