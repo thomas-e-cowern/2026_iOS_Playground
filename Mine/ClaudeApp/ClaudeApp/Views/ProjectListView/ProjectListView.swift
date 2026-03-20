@@ -7,6 +7,7 @@ struct ProjectListView: View {
     @State private var projectToEdit: Project?
     @State private var projectToDelete: Project?
     @State private var selectedProjectID: UUID?
+    @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @State private var showFileImporter = false
     @State private var importResultMessage: String?
     @State private var showImportResult = false
@@ -57,6 +58,10 @@ struct ProjectListView: View {
                             showUserGuide()
                         } label: {
                             Label("User Guide", systemImage: "book")
+                        }
+                        Divider()
+                        Toggle(isOn: $hapticsEnabled) {
+                            Label("Haptic Feedback", systemImage: "hand.tap")
                         }
                     } label: {
                         Image(systemName: "gearshape")

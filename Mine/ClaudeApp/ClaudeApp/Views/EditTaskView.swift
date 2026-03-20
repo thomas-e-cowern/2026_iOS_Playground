@@ -73,6 +73,7 @@ struct EditTaskView: View {
                         HStack {
                             Button {
                                 step.isCompleted.toggle()
+                                HapticManager.stepToggled()
                             } label: {
                                 Image(systemName: step.isCompleted ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(step.isCompleted ? .green : .gray)
@@ -110,6 +111,7 @@ struct EditTaskView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         store.pushUndo()
+                        let wasCompleted = task.status == .completed
                         let updated = task
                         updated.title = title
                         updated.details = details
@@ -119,6 +121,15 @@ struct EditTaskView: View {
                         updated.recurrenceRule = recurrenceRule
                         updated.steps = steps
                         store.updateTask(updated, in: projectID)
+
+                        if status == .completed && !wasCompleted {
+                            HapticManager.taskCompleted()
+                            if let project = store.projects.first(where: { $0.id == projectID }),
+                               project.completionPercentage == 1.0 {
+                                HapticManager.milestoneReached()
+                            }
+                        }
+
                         dismiss()
                     }
                     .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)

@@ -61,6 +61,8 @@ struct ClaudeAppApp: App {
     private let quickActionState = QuickActionState.shared
 
     init() {
+        UserDefaults.standard.register(defaults: ["hapticsEnabled": true])
+
         do {
             container = try SharedModelContainer.create()
         } catch {

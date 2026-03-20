@@ -73,6 +73,7 @@ struct TaskRow: View {
 
     private func cycleStatus() {
         store.pushUndo()
+        let previousStatus = task.status
         let updated = task
         switch task.status {
         case .notStarted: updated.status = .inProgress
@@ -80,6 +81,16 @@ struct TaskRow: View {
         case .completed: updated.status = .notStarted
         }
         store.updateTask(updated, in: projectID)
+
+        if updated.status == .completed && previousStatus != .completed {
+            HapticManager.taskCompleted()
+            if let project = store.projects.first(where: { $0.id == projectID }),
+               project.completionPercentage == 1.0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    HapticManager.milestoneReached()
+                }
+            }
+        }
     }
 
     private var statusColor: Color {
