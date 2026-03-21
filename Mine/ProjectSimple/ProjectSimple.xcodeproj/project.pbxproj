@@ -90,9 +90,43 @@
 		4DF8728A2F6ECAC800D6B581 /* Project​Simple​Watch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Project​Simple​Watch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4D361A812F65A410003F56C6 /* Exceptions for "OverdueTasksWidget" folder in "OverdueTasksWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */;
+		};
+		4D361A892F65A574003F56C6 /* Exceptions for "ProjectSimple" folder in "OverdueTasksWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/ExportModels.swift,
+				Models/ProjectModels.swift,
+				Models/ProjectTask.swift,
+				SharedModelContainer/SharedModelContainer.swift,
+			);
+			target = 4D361A6D2F65A40F003F56C6 /* OverdueTasksWidgetExtension */;
+		};
+		4DF872A12F6ED04B00D6B581 /* Exceptions for "ProjectSimple" folder in "Project​Simple​Watch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/ExportModels.swift,
+				Models/ProjectModels.swift,
+				Models/ProjectTask.swift,
+				SharedModelContainer/SharedModelContainer.swift,
+			);
+			target = 4DF872732F6ECAC700D6B581 /* Project​Simple​Watch Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4D25A7702F6074BB00E97C2D /* ProjectSimple */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4D361A892F65A574003F56C6 /* Exceptions for "ProjectSimple" folder in "OverdueTasksWidgetExtension" target */,
+				4DF872A12F6ED04B00D6B581 /* Exceptions for "ProjectSimple" folder in "Project​Simple​Watch Watch App" target */,
+			);
 			path = ProjectSimple;
 			sourceTree = "<group>";
 		};
@@ -103,6 +137,9 @@
 		};
 		4D361A742F65A40F003F56C6 /* OverdueTasksWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4D361A812F65A410003F56C6 /* Exceptions for "OverdueTasksWidget" folder in "OverdueTasksWidgetExtension" target */,
+			);
 			path = OverdueTasksWidget;
 			sourceTree = "<group>";
 		};
