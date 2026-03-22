@@ -56,11 +56,11 @@ struct HomeScreenProvider: TimelineProvider {
 
     private func fetchTasks() -> HomeScreenEntry {
         do {
-            let container = try SharedModelContainer.create()
+            let container = try SharedModelContainer.createForWidget()
             let context = ModelContext(container)
 
             let descriptor = FetchDescriptor<Project>(
-                predicate: #Predicate<Project> { !$0.isArchived }
+                predicate: #Predicate<Project> { $0.isArchived != true }
             )
             let projects = (try? context.fetch(descriptor)) ?? []
 
@@ -73,24 +73,24 @@ struct HomeScreenProvider: TimelineProvider {
             var totalActive = 0
 
             for project in projects {
-                for task in project.activeTasks where task.status != .completed {
+                for task in project.activeTasks where task.safeStatus != .completed {
                     totalActive += 1
 
-                    if task.dueDate < startOfToday {
+                    if task.safeDueDate < startOfToday {
                         overdueTasks.append(TaskSnippet(
-                            id: task.id,
-                            title: task.title,
-                            priorityColor: task.priority.color,
+                            id: task.safeID,
+                            title: task.safeTitle,
+                            priorityColor: task.safePriority.color,
                             isOverdue: true,
-                            projectName: project.name
+                            projectName: project.safeName
                         ))
-                    } else if task.dueDate >= startOfToday && task.dueDate < endOfToday {
+                    } else if task.safeDueDate >= startOfToday && task.safeDueDate < endOfToday {
                         todayTasks.append(TaskSnippet(
-                            id: task.id,
-                            title: task.title,
-                            priorityColor: task.priority.color,
+                            id: task.safeID,
+                            title: task.safeTitle,
+                            priorityColor: task.safePriority.color,
                             isOverdue: false,
-                            projectName: project.name
+                            projectName: project.safeName
                         ))
                     }
                 }

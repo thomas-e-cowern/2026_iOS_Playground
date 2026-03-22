@@ -23,16 +23,17 @@ enum ProjectCategory: String, Codable, CaseIterable {
 
 @Model
 class Project {
-    var id: UUID
-    var name: String
-    var descriptionText: String
-    var startDate: Date
-    var endDate: Date
+    // All stored properties must be optional for CloudKit compatibility.
+    var id: UUID?
+    var name: String?
+    var descriptionText: String?
+    var startDate: Date?
+    var endDate: Date?
     @Relationship(deleteRule: .cascade, inverse: \ProjectTask.project)
-    var tasks: [ProjectTask]
-    var colorName: String
-    var category: ProjectCategory
-    var isArchived: Bool
+    var tasks: [ProjectTask]?
+    var colorName: String?
+    var category: ProjectCategory?
+    var isArchived: Bool?
 
     init(
         id: UUID = UUID(),
@@ -56,8 +57,20 @@ class Project {
         self.isArchived = isArchived
     }
 
+    // MARK: - Safe Accessors (non-optional wrappers for the rest of the codebase)
+
+    var safeID: UUID { id ?? UUID() }
+    var safeName: String { name ?? "" }
+    var safeDescription: String { descriptionText ?? "" }
+    var safeStartDate: Date { startDate ?? .now }
+    var safeEndDate: Date { endDate ?? .now }
+    var safeTasks: [ProjectTask] { tasks ?? [] }
+    var safeColorName: String { colorName ?? "blue" }
+    var safeCategory: ProjectCategory { category ?? .other }
+    var safeIsArchived: Bool { isArchived ?? false }
+
     var activeTasks: [ProjectTask] {
-        tasks.filter { !$0.isArchived }
+        safeTasks.filter { !$0.safeIsArchived }
     }
 
     var completionPercentage: Double {

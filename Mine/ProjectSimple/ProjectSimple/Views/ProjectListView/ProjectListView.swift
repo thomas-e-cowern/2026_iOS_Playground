@@ -13,6 +13,8 @@ struct ProjectListView: View {
     @State private var showImportResult = false
 
     var body: some View {
+        // Read refreshToken to re-evaluate when data changes via sync.
+        let _ = store.refreshToken
         NavigationSplitView {
             Group {
                 if store.activeProjects.isEmpty {
@@ -24,13 +26,13 @@ struct ProjectListView: View {
                 } else {
                     List(selection: $selectedProjectID) {
                         ForEach(store.activeProjects) { project in
-                            NavigationLink(value: project.id) {
+                            NavigationLink(value: project.safeID) {
                                 ProjectRow(project: project)
                             }
                             .rowSwipeActions(onDelete: {
                                 projectToDelete = project
                             }, onArchive: {
-                                store.archiveProject(project.id)
+                                store.archiveProject(project.safeID)
                             }, onEdit: {
                                 projectToEdit = project
                             })
@@ -108,7 +110,7 @@ struct ProjectListView: View {
                 }
                 Button("Delete", role: .destructive) {
                     if let project = projectToDelete {
-                        store.deleteProject(project.id)
+                        store.deleteProject(project.safeID)
                     }
                     projectToDelete = nil
                 }
@@ -129,7 +131,7 @@ struct ProjectListView: View {
             }
         } detail: {
             if let selectedProjectID,
-               let project = store.projects.first(where: { $0.id == selectedProjectID }) {
+               let project = store.projects.first(where: { $0.safeID == selectedProjectID }) {
                 ProjectDetailView(project: project)
             } else {
                 ContentUnavailableView {

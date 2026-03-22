@@ -13,9 +13,9 @@ struct WatchTaskDetailView: View {
                     store.cycleTaskStatus(task)
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: task.status.icon)
+                        Image(systemName: task.safeStatus.icon)
                             .foregroundStyle(statusColor)
-                        Text(task.status.rawValue)
+                        Text(task.safeStatus.rawValue)
                             .font(.caption)
                     }
                 }
@@ -26,7 +26,7 @@ struct WatchTaskDetailView: View {
                     Circle()
                         .fill(priorityColor)
                         .frame(width: 8, height: 8)
-                    Text(task.priority.rawValue)
+                    Text(task.safePriority.rawValue)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -36,7 +36,7 @@ struct WatchTaskDetailView: View {
                     Image(systemName: "calendar")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(task.dueDate, format: .dateTime.month(.abbreviated).day())
+                    Text(task.safeDueDate, format: .dateTime.month(.abbreviated).day())
                         .font(.caption)
                         .foregroundStyle(isOverdue ? .red : .secondary)
                 }
@@ -52,31 +52,31 @@ struct WatchTaskDetailView: View {
                 }
 
                 // Recurrence
-                if task.recurrenceRule != .none {
+                if task.safeRecurrenceRule != .none {
                     HStack(spacing: 6) {
                         Image(systemName: "repeat")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(task.recurrenceRule.rawValue)
+                        Text(task.safeRecurrenceRule.rawValue)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 // Details
-                if !task.details.isEmpty {
-                    Text(task.details)
+                if !task.safeDetails.isEmpty {
+                    Text(task.safeDetails)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
 
                 // Steps
-                if !task.steps.isEmpty {
+                if !task.safeSteps.isEmpty {
                     Divider()
-                    Text("Steps (\(task.completedStepsCount)/\(task.steps.count))")
+                    Text("Steps (\(task.completedStepsCount)/\(task.safeSteps.count))")
                         .font(.caption.bold())
 
-                    ForEach(task.steps) { step in
+                    ForEach(task.safeSteps) { step in
                         Button {
                             store.toggleStep(stepID: step.id, in: task)
                         } label: {
@@ -96,15 +96,15 @@ struct WatchTaskDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .navigationTitle(task.title)
+        .navigationTitle(task.safeTitle)
     }
 
     private var isOverdue: Bool {
-        task.status != .completed && task.dueDate < Calendar.current.startOfDay(for: .now)
+        task.safeStatus != .completed && task.safeDueDate < Calendar.current.startOfDay(for: .now)
     }
 
     private var statusColor: Color {
-        switch task.status {
+        switch task.safeStatus {
         case .notStarted: return .gray
         case .inProgress: return .blue
         case .completed: return .green
@@ -112,7 +112,7 @@ struct WatchTaskDetailView: View {
     }
 
     private var priorityColor: Color {
-        switch task.priority {
+        switch task.safePriority {
         case .high: return .red
         case .medium: return .orange
         case .low: return .green

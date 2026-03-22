@@ -11,28 +11,28 @@ struct WatchTaskRow: View {
                 Button {
                     store.cycleTaskStatus(task)
                 } label: {
-                    Image(systemName: task.status.icon)
+                    Image(systemName: task.safeStatus.icon)
                         .foregroundStyle(statusColor)
                         .font(.body)
                 }
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(task.title)
+                    Text(task.safeTitle)
                         .font(.caption)
                         .lineLimit(2)
-                        .strikethrough(task.status == .completed)
-                        .foregroundStyle(task.status == .completed ? .secondary : .primary)
+                        .strikethrough(task.safeStatus == .completed)
+                        .foregroundStyle(task.safeStatus == .completed ? .secondary : .primary)
 
                     HStack(spacing: 4) {
-                        Text(task.priority.rawValue)
+                        Text(task.safePriority.rawValue)
                             .font(.caption2)
                             .foregroundStyle(priorityColor)
 
-                        if !task.steps.isEmpty {
-                            Text("\(task.completedStepsCount)/\(task.steps.count)")
+                        if !task.safeSteps.isEmpty {
+                            Text("\(task.completedStepsCount)/\(task.safeSteps.count)")
                                 .font(.caption2)
-                                .foregroundStyle(task.completedStepsCount == task.steps.count ? .green : .secondary)
+                                .foregroundStyle(task.completedStepsCount == task.safeSteps.count ? .green : .secondary)
                         }
                     }
                 }
@@ -41,7 +41,7 @@ struct WatchTaskRow: View {
     }
 
     private var statusColor: Color {
-        switch task.status {
+        switch task.safeStatus {
         case .notStarted: return .gray
         case .inProgress: return .blue
         case .completed: return .green
@@ -49,7 +49,7 @@ struct WatchTaskRow: View {
     }
 
     private var priorityColor: Color {
-        switch task.priority {
+        switch task.safePriority {
         case .high: return .red
         case .medium: return .orange
         case .low: return .green

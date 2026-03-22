@@ -10,16 +10,17 @@ import SwiftData
 
 @Model
 class ProjectTask {
-    var id: UUID
-    var title: String
-    var details: String
-    var dueDate: Date
-    var status: TaskStatus
-    var priority: TaskPriority
-    var isArchived: Bool
-    var recurrenceRule: RecurrenceRule
-    var hasGeneratedNextOccurrence: Bool
-    var steps: [TaskStep]
+    // All stored properties must be optional for CloudKit compatibility.
+    var id: UUID?
+    var title: String?
+    var details: String?
+    var dueDate: Date?
+    var status: TaskStatus?
+    var priority: TaskPriority?
+    var isArchived: Bool?
+    var recurrenceRule: RecurrenceRule?
+    var hasGeneratedNextOccurrence: Bool?
+    var steps: [TaskStep]?
     var completedDate: Date?
     var project: Project?
 
@@ -48,12 +49,25 @@ class ProjectTask {
         self.completedDate = completedDate ?? (status == .completed ? Date.now : nil)
     }
 
+    // MARK: - Safe Accessors (non-optional wrappers for the rest of the codebase)
+
+    var safeID: UUID { id ?? UUID() }
+    var safeTitle: String { title ?? "" }
+    var safeDetails: String { details ?? "" }
+    var safeDueDate: Date { dueDate ?? .now }
+    var safeStatus: TaskStatus { status ?? .notStarted }
+    var safePriority: TaskPriority { priority ?? .medium }
+    var safeIsArchived: Bool { isArchived ?? false }
+    var safeRecurrenceRule: RecurrenceRule { recurrenceRule ?? .none }
+    var safeHasGeneratedNextOccurrence: Bool { hasGeneratedNextOccurrence ?? false }
+    var safeSteps: [TaskStep] { steps ?? [] }
+
     var completedStepsCount: Int {
-        steps.filter { $0.isCompleted }.count
+        safeSteps.filter { $0.isCompleted }.count
     }
 
     var stepsResetForRecurrence: [TaskStep] {
-        steps.map { TaskStep(title: $0.title) }
+        safeSteps.map { TaskStep(title: $0.title) }
     }
 }
 

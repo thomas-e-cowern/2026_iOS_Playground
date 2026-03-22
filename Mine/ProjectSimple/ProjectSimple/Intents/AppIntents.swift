@@ -30,8 +30,8 @@ struct ProjectEntityQuery: EntityQuery {
         let descriptor = FetchDescriptor<Project>()
         let projects = (try? context.fetch(descriptor)) ?? []
         return projects
-            .filter { identifiers.contains($0.id) && !$0.isArchived }
-            .map { ProjectEntity(id: $0.id, name: $0.name) }
+            .filter { identifiers.contains($0.safeID) && !$0.safeIsArchived }
+            .map { ProjectEntity(id: $0.safeID, name: $0.safeName) }
     }
 
     @MainActor
@@ -40,8 +40,8 @@ struct ProjectEntityQuery: EntityQuery {
         let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
         let projects = (try? context.fetch(descriptor)) ?? []
         return projects
-            .filter { !$0.isArchived }
-            .map { ProjectEntity(id: $0.id, name: $0.name) }
+            .filter { !$0.safeIsArchived }
+            .map { ProjectEntity(id: $0.safeID, name: $0.safeName) }
     }
 }
 
@@ -67,9 +67,9 @@ struct TaskEntityQuery: EntityQuery {
         let descriptor = FetchDescriptor<Project>()
         let projects = (try? context.fetch(descriptor)) ?? []
         var results: [TaskEntity] = []
-        for project in projects where !project.isArchived {
-            for task in project.activeTasks where identifiers.contains(task.id) {
-                results.append(TaskEntity(id: task.id, title: task.title, projectName: project.name))
+        for project in projects where !project.safeIsArchived {
+            for task in project.activeTasks where identifiers.contains(task.safeID) {
+                results.append(TaskEntity(id: task.safeID, title: task.safeTitle, projectName: project.safeName))
             }
         }
         return results
@@ -81,9 +81,9 @@ struct TaskEntityQuery: EntityQuery {
         let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
         let projects = (try? context.fetch(descriptor)) ?? []
         var results: [TaskEntity] = []
-        for project in projects where !project.isArchived {
-            for task in project.activeTasks where task.status != .completed {
-                results.append(TaskEntity(id: task.id, title: task.title, projectName: project.name))
+        for project in projects where !project.safeIsArchived {
+            for task in project.activeTasks where task.safeStatus != .completed {
+                results.append(TaskEntity(id: task.safeID, title: task.safeTitle, projectName: project.safeName))
             }
         }
         return results
@@ -133,7 +133,7 @@ struct ShowOverdueTasksIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = try makeContext()
         let descriptor = FetchDescriptor<Project>(
-            predicate: #Predicate<Project> { !$0.isArchived }
+            predicate: #Predicate<Project> { $0.isArchived != true }
         )
         let projects = (try? context.fetch(descriptor)) ?? []
 
@@ -143,8 +143,8 @@ struct ShowOverdueTasksIntent: AppIntent {
         var overdueTasks: [(title: String, projectName: String)] = []
         for project in projects {
             for task in project.activeTasks {
-                if task.status != .completed && task.dueDate < startOfToday {
-                    overdueTasks.append((title: task.title, projectName: project.name))
+                if task.safeStatus != .completed && task.safeDueDate < startOfToday {
+                    overdueTasks.append((title: task.safeTitle, projectName: project.safeName))
                 }
             }
         }
@@ -181,7 +181,7 @@ struct GetTaskCountIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = try makeContext()
         let descriptor = FetchDescriptor<Project>(
-            predicate: #Predicate<Project> { !$0.isArchived }
+            predicate: #Predicate<Project> { $0.isArchived != true }
         )
         let projects = (try? context.fetch(descriptor)) ?? []
 
@@ -194,11 +194,11 @@ struct GetTaskCountIntent: AppIntent {
         var dueTodayCount = 0
 
         for project in projects {
-            for task in project.activeTasks where task.status != .completed {
+            for task in project.activeTasks where task.safeStatus != .completed {
                 totalActive += 1
-                if task.dueDate < startOfToday {
+                if task.safeDueDate < startOfToday {
                     overdueCount += 1
-                } else if task.dueDate >= startOfToday && task.dueDate < endOfToday {
+                } else if task.safeDueDate >= startOfToday && task.safeDueDate < endOfToday {
                     dueTodayCount += 1
                 }
             }
@@ -237,28 +237,29 @@ struct MarkTaskCompleteIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = try makeContext()
         let descriptor = FetchDescriptor<Project>(
-            predicate: #Predicate<Project> { !$0.isArchived }
+            predicate: #Predicate<Project> { $0.isArchived != true }
         )
         let projects = (try? context.fetch(descriptor)) ?? []
 
         for project in projects {
-            if let matchingTask = project.activeTasks.first(where: { $0.id == task.id }) {
+            if let matchingTask = project.activeTasks.first(where: { $0.safeID == task.id }) {
                 matchingTask.status = .completed
                 matchingTask.completedDate = Date.now
 
                 // Handle recurrence
-                if matchingTask.recurrenceRule != .none && !matchingTask.hasGeneratedNextOccurrence,
-                   let nextDate = matchingTask.recurrenceRule.nextDueDate(from: matchingTask.dueDate) {
+                if matchingTask.safeRecurrenceRule != .none && !matchingTask.safeHasGeneratedNextOccurrence,
+                   let nextDate = matchingTask.safeRecurrenceRule.nextDueDate(from: matchingTask.safeDueDate) {
                     let nextTask = ProjectTask(
-                        title: matchingTask.title,
-                        details: matchingTask.details,
+                        title: matchingTask.safeTitle,
+                        details: matchingTask.safeDetails,
                         dueDate: nextDate,
-                        priority: matchingTask.priority,
-                        recurrenceRule: matchingTask.recurrenceRule,
+                        priority: matchingTask.safePriority,
+                        recurrenceRule: matchingTask.safeRecurrenceRule,
                         steps: matchingTask.stepsResetForRecurrence
                     )
                     matchingTask.hasGeneratedNextOccurrence = true
-                    project.tasks.append(nextTask)
+                    if project.tasks == nil { project.tasks = [] }
+                    project.tasks?.append(nextTask)
                 }
 
                 try? context.save()

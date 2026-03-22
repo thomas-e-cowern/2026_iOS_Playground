@@ -15,27 +15,27 @@ struct ArchivedProjectRow: View {
     var body: some View {
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 8)
-                .fill(color(for: project.colorName))
+                .fill(color(for: project.safeColorName))
                 .frame(width: 6, height: 50)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(project.name)
+                Text(project.safeName)
                     .font(.headline)
 
-                if !project.descriptionText.isEmpty {
-                    Text(project.descriptionText)
+                if !project.safeDescription.isEmpty {
+                    Text(project.safeDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
 
                 HStack(spacing: 12) {
-                    Label("\(project.tasks.count) tasks", systemImage: "checklist")
+                    Label("\(project.safeTasks.count) tasks", systemImage: "checklist")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
-                    if project.isArchived {
+                    if project.safeIsArchived {
                         Text("Archived")
                             .font(.caption2.weight(.semibold))
                             .padding(.horizontal, 6)
@@ -59,7 +59,7 @@ struct ArchivedProjectRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(project.name), \(project.tasks.count) tasks\(project.isArchived ? ", archived" : "")\(project.completionPercentage == 1.0 ? ", complete" : "")")
+        .accessibilityLabel("\(project.safeName), \(project.safeTasks.count) tasks\(project.safeIsArchived ? ", archived" : "")\(project.completionPercentage == 1.0 ? ", complete" : "")")
     }
 
     private func color(for name: String) -> Color {

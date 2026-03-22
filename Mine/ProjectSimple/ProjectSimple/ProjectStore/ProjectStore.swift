@@ -1,7 +1,9 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import CoreData
 import WidgetKit
+import Combine
 
 @MainActor
 @Observable
@@ -10,6 +12,11 @@ class ProjectStore {
     var notificationManager: NotificationManager?
     private(set) var projects: [Project] = []
     var errorMessage: String?
+    private var remoteChangeObserver: AnyCancellable?
+
+    /// Bumped on every remote-change refresh so views that read it
+    /// re-evaluate even when the `projects` array identity is unchanged.
+    private(set) var refreshToken: Int = 0
 
     // MARK: - Snapshot-based Undo / Redo
 
@@ -22,26 +29,132 @@ class ProjectStore {
     var canRedo: Bool { !redoStack.isEmpty }
 
     var activeProjects: [Project] {
-        projects.filter { !$0.isArchived }
+        projects.filter { !$0.safeIsArchived }
     }
 
     var archivedProjects: [Project] {
-        projects.filter { $0.isArchived }
+        projects.filter { $0.safeIsArchived }
     }
 
     var completedProjects: [Project] {
-        projects.filter { !$0.isArchived && $0.completionPercentage == 1.0 }
+        projects.filter { !$0.safeIsArchived && $0.completionPercentage == 1.0 }
     }
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        loadSampleDataIfNeeded()
         refreshProjects()
+        cleanupDuplicateGettingStarted()
+        observeRemoteChanges()
+        startSyncPolling()
+    }
+
+    /// Listens for CloudKit remote-change notifications so the UI stays
+    /// up to date when data arrives from another device.
+    private func observeRemoteChanges() {
+        remoteChangeObserver = NotificationCenter.default
+            .publisher(for: .NSPersistentStoreRemoteChange)
+            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                print("📡 NSPersistentStoreRemoteChange received")
+                self?.refreshAfterRemoteChange()
+            }
+    }
+
+    /// Polls for CloudKit changes on a timer as a fallback, since
+    /// NSPersistentStoreRemoteChange may not always fire reliably.
+    private func startSyncPolling() {
+        Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                self?.pollForChanges()
+            }
+        }
+    }
+
+    /// Checks if the store has new data by comparing a fresh fetch
+    /// against the current in-memory state.
+    private func pollForChanges() {
+        let freshContext = ModelContext(modelContext.container)
+
+        let projectDescriptor = FetchDescriptor<Project>()
+        let freshProjects = (try? freshContext.fetch(projectDescriptor)) ?? []
+
+        let taskDescriptor = FetchDescriptor<ProjectTask>()
+        let freshTasks = (try? freshContext.fetch(taskDescriptor)) ?? []
+
+        // Build a simple fingerprint of the fresh data so we can detect
+        // property-level changes (status, steps, title, etc.) and not
+        // just count changes.
+        let freshFingerprint = buildFingerprint(projects: freshProjects, tasks: freshTasks)
+        let currentFingerprint = buildCurrentFingerprint()
+
+        if freshFingerprint != currentFingerprint {
+            print("📡 Poll detected changes")
+            refreshAfterRemoteChange()
+        }
+    }
+
+    /// Builds a string fingerprint from fresh context data.
+    private func buildFingerprint(projects: [Project], tasks: [ProjectTask]) -> String {
+        let projectPart = projects
+            .sorted { ($0.id?.uuidString ?? "") < ($1.id?.uuidString ?? "") }
+            .map { "\($0.id?.uuidString ?? ""):\($0.name ?? ""):\($0.isArchived ?? false)" }
+            .joined(separator: "|")
+
+        let taskPart = tasks
+            .sorted { ($0.id?.uuidString ?? "") < ($1.id?.uuidString ?? "") }
+            .map { "\($0.id?.uuidString ?? ""):\($0.status?.rawValue ?? ""):\($0.isArchived ?? false):\($0.title ?? ""):\($0.steps?.count ?? 0)" }
+            .joined(separator: "|")
+
+        return "\(projects.count);\(tasks.count);\(projectPart);\(taskPart)"
+    }
+
+    /// Builds a fingerprint from the current in-memory state.
+    private func buildCurrentFingerprint() -> String {
+        let allTasks = projects.flatMap { $0.safeTasks }
+
+        let projectPart = projects
+            .sorted { $0.safeID.uuidString < $1.safeID.uuidString }
+            .map { "\($0.safeID.uuidString):\($0.safeName):\($0.safeIsArchived)" }
+            .joined(separator: "|")
+
+        let taskPart = allTasks
+            .sorted { $0.safeID.uuidString < $1.safeID.uuidString }
+            .map { "\($0.safeID.uuidString):\($0.safeStatus.rawValue):\($0.safeIsArchived):\($0.safeTitle):\($0.safeSteps.count)" }
+            .joined(separator: "|")
+
+        let totalTasks = allTasks.count
+        return "\(projects.count);\(totalTasks);\(projectPart);\(taskPart)"
+    }
+
+    /// Forces the context to pick up any pending external changes
+    /// (e.g. from CloudKit) and re-fetches the project list.
+    func refreshAfterRemoteChange() {
+        // Persist any in-flight local edits so rollback won't lose them.
+        try? modelContext.save()
+        // Rollback clears unsaved changes and causes the context to
+        // re-fault objects on next access.
+        modelContext.rollback()
+        refreshProjects()
+        cleanupDuplicateGettingStarted()
+        // Bump the token so views that read it re-evaluate, even when
+        // the same Project objects are returned with different task data.
+        refreshToken += 1
+        print("🔄 Refreshed (token \(refreshToken)): \(projects.count) projects, \(projects.map { $0.safeTasks.count }.reduce(0, +)) total tasks")
     }
 
     private func refreshProjects() {
-        let descriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
-        projects = (try? modelContext.fetch(descriptor)) ?? []
+        // Fetch projects first.
+        let projectDescriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
+        let fetchedProjects = (try? modelContext.fetch(projectDescriptor)) ?? []
+
+        // Also fetch all tasks so the context has them registered and
+        // up to date — this ensures task property changes from CloudKit
+        // (status, steps, etc.) are reflected in the relationship arrays.
+        let taskDescriptor = FetchDescriptor<ProjectTask>()
+        _ = try? modelContext.fetch(taskDescriptor)
+
+        projects = fetchedProjects
     }
 
     private func save() {
@@ -71,8 +184,8 @@ class ProjectStore {
         // then delete everything. This avoids the "mandatory OTO nullify
         // inverse" batch-delete constraint violation in CoreData.
         for project in projects {
-            let tasks = project.tasks
-            project.tasks.removeAll()
+            let tasks = project.tasks ?? []
+            project.tasks?.removeAll()
             for task in tasks {
                 modelContext.delete(task)
             }
@@ -84,6 +197,9 @@ class ProjectStore {
         for exportable in snapshot {
             let project = exportable.toProject()
             modelContext.insert(project)
+            for task in project.safeTasks {
+                modelContext.insert(task)
+            }
         }
         save()
     }
@@ -141,7 +257,7 @@ class ProjectStore {
     }
 
     func deleteProject(_ projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }) {
             pushUndo()
             modelContext.delete(project)
             save()
@@ -150,7 +266,7 @@ class ProjectStore {
     }
 
     func archiveProject(_ projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }) {
             pushUndo()
             project.isArchived = true
             save()
@@ -159,7 +275,7 @@ class ProjectStore {
     }
 
     func unarchiveProject(_ projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }) {
             pushUndo()
             project.isArchived = false
             save()
@@ -170,9 +286,11 @@ class ProjectStore {
     // MARK: - Task Operations
 
     func addTask(_ task: ProjectTask, to projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }) {
             pushUndo()
-            project.tasks.append(task)
+            modelContext.insert(task)
+            if project.tasks == nil { project.tasks = [] }
+            project.tasks?.append(task)
             save()
         }
         scheduleNotifications()
@@ -187,29 +305,31 @@ class ProjectStore {
     // MARK: - Recurrence
 
     private func generateNextOccurrenceIfNeeded(for task: ProjectTask, in projectID: UUID) {
-        guard task.status == .completed,
-              task.recurrenceRule != .none,
-              !task.hasGeneratedNextOccurrence,
-              let nextDate = task.recurrenceRule.nextDueDate(from: task.dueDate),
-              let project = projects.first(where: { $0.id == projectID })
+        guard task.safeStatus == .completed,
+              task.safeRecurrenceRule != .none,
+              !task.safeHasGeneratedNextOccurrence,
+              let nextDate = task.safeRecurrenceRule.nextDueDate(from: task.safeDueDate),
+              let project = projects.first(where: { $0.safeID == projectID })
         else { return }
 
         let nextTask = ProjectTask(
-            title: task.title,
-            details: task.details,
+            title: task.safeTitle,
+            details: task.safeDetails,
             dueDate: nextDate,
-            priority: task.priority,
-            recurrenceRule: task.recurrenceRule,
+            priority: task.safePriority,
+            recurrenceRule: task.safeRecurrenceRule,
             steps: task.stepsResetForRecurrence
         )
 
         task.hasGeneratedNextOccurrence = true
-        project.tasks.append(nextTask)
+        modelContext.insert(nextTask)
+        if project.tasks == nil { project.tasks = [] }
+        project.tasks?.append(nextTask)
     }
 
     func deleteTask(_ taskID: UUID, from projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }),
-           let task = project.tasks.first(where: { $0.id == taskID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }),
+           let task = project.safeTasks.first(where: { $0.safeID == taskID }) {
             pushUndo()
             modelContext.delete(task)
             save()
@@ -218,8 +338,8 @@ class ProjectStore {
     }
 
     func archiveTask(_ taskID: UUID, in projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }),
-           let task = project.tasks.first(where: { $0.id == taskID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }),
+           let task = project.safeTasks.first(where: { $0.safeID == taskID }) {
             pushUndo()
             task.isArchived = true
             save()
@@ -228,8 +348,8 @@ class ProjectStore {
     }
 
     func unarchiveTask(_ taskID: UUID, in projectID: UUID) {
-        if let project = projects.first(where: { $0.id == projectID }),
-           let task = project.tasks.first(where: { $0.id == taskID }) {
+        if let project = projects.first(where: { $0.safeID == projectID }),
+           let task = project.safeTasks.first(where: { $0.safeID == taskID }) {
             pushUndo()
             task.isArchived = false
             save()
@@ -244,7 +364,7 @@ class ProjectStore {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in activeProjects {
             for task in project.activeTasks {
-                if calendar.isDate(task.dueDate, inSameDayAs: date) && task.status != .completed {
+                if calendar.isDate(task.safeDueDate, inSameDayAs: date) && task.safeStatus != .completed {
                     results.append((project: project, task: task))
                 }
             }
@@ -258,12 +378,12 @@ class ProjectStore {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in activeProjects {
             for task in project.activeTasks {
-                if task.status != .completed && task.dueDate < startOfToday {
+                if task.safeStatus != .completed && task.safeDueDate < startOfToday {
                     results.append((project: project, task: task))
                 }
             }
         }
-        return results.sorted { $0.task.dueDate < $1.task.dueDate }
+        return results.sorted { $0.task.safeDueDate < $1.task.safeDueDate }
     }
 
     func allTasks() -> [(project: Project, task: ProjectTask)] {
@@ -300,6 +420,9 @@ class ProjectStore {
         for exportableProject in backup.projects {
             let project = exportableProject.toProject()
             modelContext.insert(project)
+            for task in project.safeTasks {
+                modelContext.insert(task)
+            }
             importedCount += 1
         }
         save()
@@ -321,10 +444,37 @@ class ProjectStore {
     // MARK: - Sample Data
 
     private func loadSampleDataIfNeeded() {
+        // With CloudKit, the local store is empty on launch and data
+        // arrives asynchronously.  Only insert sample data once per
+        // install, using a UserDefaults flag.
+        let key = "hasLoadedSampleData"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
         let descriptor = FetchDescriptor<Project>()
         let count = (try? modelContext.fetchCount(descriptor)) ?? 0
         guard count == 0 else { return }
+
         loadSampleData()
+    }
+
+    /// Removes ALL "Getting Started" projects that were duplicated by
+    /// earlier bugs.  Runs on every remote change and at init until no
+    /// more copies exist — CloudKit may keep syncing them down in waves.
+    func cleanupDuplicateGettingStarted() {
+        let gettingStarted = projects.filter { $0.safeName == "Getting Started" }
+        guard !gettingStarted.isEmpty else { return }
+
+        for project in gettingStarted {
+            let tasks = project.tasks ?? []
+            project.tasks?.removeAll()
+            for task in tasks {
+                modelContext.delete(task)
+            }
+            modelContext.delete(project)
+        }
+        save()
+        print("🧹 Deleted \(gettingStarted.count) Getting Started project(s)")
     }
 
     private func loadSampleData() {
@@ -387,6 +537,9 @@ class ProjectStore {
         )
 
         modelContext.insert(gettingStarted)
+        for task in gettingStartedTasks {
+            modelContext.insert(task)
+        }
         save()
     }
 }

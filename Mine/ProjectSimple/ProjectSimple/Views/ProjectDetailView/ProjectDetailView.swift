@@ -10,7 +10,9 @@ struct ProjectDetailView: View {
     @State private var taskToDelete: ProjectTask?
 
     private var currentProject: Project {
-        store.projects.first(where: { $0.id == project.id }) ?? project
+        // Read refreshToken to force re-evaluation when CloudKit data arrives.
+        _ = store.refreshToken
+        return store.projects.first(where: { $0.safeID == project.safeID }) ?? project
     }
 
     var body: some View {
@@ -20,7 +22,7 @@ struct ProjectDetailView: View {
             tasksSection
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(currentProject.name)
+        .navigationTitle(currentProject.safeName)
         .toolbar {
             ToolbarItemGroup(placement: .topBarLeading) {
                 Button {
@@ -55,7 +57,7 @@ struct ProjectDetailView: View {
                     }
 
                     Button {
-                        store.archiveProject(project.id)
+                        store.archiveProject(project.safeID)
                     } label: {
                         Label("Archive Project", systemImage: "archivebox")
                     }
@@ -74,7 +76,7 @@ struct ProjectDetailView: View {
             }
         }
         .sheet(isPresented: $showAddTask) {
-            AddTaskView(projectID: project.id)
+            AddTaskView(projectID: project.safeID)
         }
         .sheet(isPresented: $showEditProject) {
             EditProjectView(project: currentProject)
@@ -84,8 +86,8 @@ struct ProjectDetailView: View {
             set: { if !$0 { editingTaskID = nil } }
         )) {
             if let taskID = editingTaskID,
-               let task = currentProject.tasks.first(where: { $0.id == taskID }) {
-                EditTaskView(task: task, projectID: project.id)
+               let task = currentProject.safeTasks.first(where: { $0.safeID == taskID }) {
+                EditTaskView(task: task, projectID: project.safeID)
             }
         }
         .alert("Delete Task", isPresented: Binding(
@@ -97,7 +99,7 @@ struct ProjectDetailView: View {
             }
             Button("Delete", role: .destructive) {
                 if let task = taskToDelete {
-                    store.deleteTask(task.id, from: project.id)
+                    store.deleteTask(task.safeID, from: project.safeID)
                 }
                 taskToDelete = nil
             }
@@ -111,22 +113,22 @@ struct ProjectDetailView: View {
 
     private var projectInfoSection: some View {
         Section("Details") {
-            if !currentProject.descriptionText.isEmpty {
-                Text(currentProject.descriptionText)
+            if !currentProject.safeDescription.isEmpty {
+                Text(currentProject.safeDescription)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
             LabeledContent("Category") {
-                Label(currentProject.category.rawValue, systemImage: currentProject.category.icon)
+                Label(currentProject.safeCategory.rawValue, systemImage: currentProject.safeCategory.icon)
             }
 
             LabeledContent("Start Date") {
-                Text(currentProject.startDate, style: .date)
+                Text(currentProject.safeStartDate, style: .date)
             }
 
             LabeledContent("End Date") {
-                Text(currentProject.endDate, style: .date)
+                Text(currentProject.safeEndDate, style: .date)
             }
         }
     }
@@ -145,7 +147,7 @@ struct ProjectDetailView: View {
                 }
 
                 ProgressView(value: currentProject.completionPercentage)
-                    .tint(color(for: currentProject.colorName))
+                    .tint(color(for: currentProject.safeColorName))
                     .accessibilityLabel("Completion progress")
                     .accessibilityValue("\(Int(currentProject.completionPercentage * 100)) percent")
 
@@ -188,13 +190,13 @@ struct ProjectDetailView: View {
             } else {
                 TipView(swipeTip)
                 ForEach(sortedTasks) { task in
-                    TaskRow(task: task, projectID: project.id)
+                    TaskRow(task: task, projectID: project.safeID)
                         .rowSwipeActions(onDelete: {
                             taskToDelete = task
                         }, onArchive: {
-                            store.archiveTask(task.id, in: project.id)
+                            store.archiveTask(task.safeID, in: project.safeID)
                         }, onEdit: {
-                            editingTaskID = task.id
+                            editingTaskID = task.safeID
                         })
                 }
             }
@@ -205,30 +207,30 @@ struct ProjectDetailView: View {
 
     private var sortedTasks: [ProjectTask] {
         currentProject.activeTasks.sorted { a, b in
-            if a.status == .completed && b.status != .completed { return false }
-            if a.status != .completed && b.status == .completed { return true }
-            if a.priority != b.priority { return a.priority < b.priority }
-            return a.dueDate < b.dueDate
+            if a.safeStatus == .completed && b.safeStatus != .completed { return false }
+            if a.safeStatus != .completed && b.safeStatus == .completed { return true }
+            if a.safePriority != b.safePriority { return a.safePriority < b.safePriority }
+            return a.safeDueDate < b.safeDueDate
         }
     }
 
     private var completedCount: Int {
-        currentProject.activeTasks.filter { $0.status == .completed }.count
+        currentProject.activeTasks.filter { $0.safeStatus == .completed }.count
     }
 
     private var inProgressCount: Int {
-        currentProject.activeTasks.filter { $0.status == .inProgress }.count
+        currentProject.activeTasks.filter { $0.safeStatus == .inProgress }.count
     }
 
     private var notStartedCount: Int {
-        currentProject.activeTasks.filter { $0.status == .notStarted }.count
+        currentProject.activeTasks.filter { $0.safeStatus == .notStarted }.count
     }
 
     private func exportPDF() {
         let info = PDFProjectInfo(from: currentProject)
         let generator = PDFGenerator()
         let data = generator.generatePDF(for: info)
-        let itemSource = PDFActivityItemSource(data: data, projectName: currentProject.name)
+        let itemSource = PDFActivityItemSource(data: data, projectName: currentProject.safeName)
 
         let activityVC = UIActivityViewController(activityItems: [itemSource], applicationActivities: nil)
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,

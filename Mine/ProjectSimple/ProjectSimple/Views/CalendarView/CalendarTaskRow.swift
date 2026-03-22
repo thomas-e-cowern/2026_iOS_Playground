@@ -14,28 +14,28 @@ struct CalendarTaskRow: View {
     var body: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 3)
-                .fill(color(for: project.colorName))
+                .fill(color(for: project.safeColorName))
                 .frame(width: 4, height: 40)
                 .accessibilityHidden(true)
 
-            Image(systemName: task.status.icon)
+            Image(systemName: task.safeStatus.icon)
                 .foregroundStyle(statusColor)
                 .font(.title3)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
+                Text(task.safeTitle)
                     .font(.subheadline.weight(.medium))
-                    .strikethrough(task.status == .completed, color: .secondary)
+                    .strikethrough(task.safeStatus == .completed, color: .secondary)
 
-                Text(project.name)
+                Text(project.safeName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            Text(task.priority.rawValue)
+            Text(task.safePriority.rawValue)
                 .font(.caption2.weight(.semibold))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
@@ -43,28 +43,28 @@ struct CalendarTaskRow: View {
                 .foregroundStyle(priorityColor)
                 .clipShape(Capsule())
 
-            if task.recurrenceRule != .none {
+            if task.safeRecurrenceRule != .none {
                 Image(systemName: "arrow.clockwise")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
-            if !task.steps.isEmpty {
+            if !task.safeSteps.isEmpty {
                 HStack(spacing: 2) {
                     Image(systemName: "checklist")
                         .font(.caption2)
-                    Text("\(task.completedStepsCount)/\(task.steps.count)")
+                    Text("\(task.completedStepsCount)/\(task.safeSteps.count)")
                         .font(.caption2)
                 }
-                .foregroundStyle(task.completedStepsCount == task.steps.count ? .green : .secondary)
+                .foregroundStyle(task.completedStepsCount == task.safeSteps.count ? .green : .secondary)
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(task.title), \(project.name), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")\(!task.steps.isEmpty ? ", \(task.completedStepsCount) of \(task.steps.count) steps done" : "")")
+        .accessibilityLabel("\(task.safeTitle), \(project.safeName), \(task.safeStatus.rawValue), \(task.safePriority.rawValue) priority\(task.safeRecurrenceRule != .none ? ", repeats \(task.safeRecurrenceRule.rawValue.lowercased())" : "")\(!task.safeSteps.isEmpty ? ", \(task.completedStepsCount) of \(task.safeSteps.count) steps done" : "")")
     }
 
     private var statusColor: Color {
-        switch task.status {
+        switch task.safeStatus {
         case .notStarted: return .gray
         case .inProgress: return .blue
         case .completed: return .green
@@ -72,7 +72,7 @@ struct CalendarTaskRow: View {
     }
 
     private var priorityColor: Color {
-        switch task.priority {
+        switch task.safePriority {
         case .low: return .green
         case .medium: return .orange
         case .high: return .red

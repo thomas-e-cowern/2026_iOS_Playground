@@ -21,6 +21,9 @@ struct ContentView: View {
 
     var body: some View {
         @Bindable var store = store
+        // Read refreshToken so every tab re-evaluates when CloudKit
+        // data arrives (projects archived, tasks changed, etc.).
+        let _ = store.refreshToken
 
         TabView(selection: $selectedTab) {
             Tab("Calendar", systemImage: "calendar", value: AppTab.calendar) {

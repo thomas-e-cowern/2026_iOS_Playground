@@ -31,14 +31,14 @@ struct SearchView: View {
         var results = store.activeProjects
         
         if let categoryFilter {
-            results = results.filter { $0.category == categoryFilter }
+            results = results.filter { $0.safeCategory == categoryFilter }
         }
         
         if !searchText.isEmpty {
             let query = searchText.lowercased()
             results = results.filter {
-                $0.name.lowercased().contains(query) ||
-                $0.descriptionText.lowercased().contains(query)
+                $0.safeName.lowercased().contains(query) ||
+                $0.safeDescription.lowercased().contains(query)
             }
         } else if categoryFilter == nil {
             return []
@@ -50,17 +50,17 @@ struct SearchView: View {
     private var matchingTasks: [(project: Project, task: ProjectTask)] {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in store.activeProjects {
-            if let categoryFilter, project.category != categoryFilter {
+            if let categoryFilter, project.safeCategory != categoryFilter {
                 continue
             }
             for task in project.activeTasks {
-                if let filter = priorityFilter, task.priority != filter {
+                if let filter = priorityFilter, task.safePriority != filter {
                     continue
                 }
                 if !searchText.isEmpty {
                     let query = searchText.lowercased()
-                    guard task.title.lowercased().contains(query) ||
-                            task.details.lowercased().contains(query) else {
+                    guard task.safeTitle.lowercased().contains(query) ||
+                            task.safeDetails.lowercased().contains(query) else {
                         continue
                     }
                 }
@@ -71,6 +71,8 @@ struct SearchView: View {
     }
     
     var body: some View {
+        // Read refreshToken to re-evaluate when data changes via sync.
+        let _ = store.refreshToken
         NavigationStack {
             Group {
                 if !isFiltering {
@@ -86,7 +88,7 @@ struct SearchView: View {
                         if !matchingProjects.isEmpty {
                             Section("Projects") {
                                 ForEach(matchingProjects) { project in
-                                    NavigationLink(value: project.id) {
+                                    NavigationLink(value: project.safeID) {
                                         ProjectRow(project: project)
                                     }
                                 }
@@ -95,9 +97,9 @@ struct SearchView: View {
                         
                         if !matchingTasks.isEmpty {
                             Section("Tasks") {
-                                ForEach(matchingTasks, id: \.task.id) { item in
-                                    NavigationLink(value: item.project.id) {
-                                        SearchTaskRow(task: item.task, projectName: item.project.name)
+                                ForEach(matchingTasks, id: \.task.safeID) { item in
+                                    NavigationLink(value: item.project.safeID) {
+                                        SearchTaskRow(task: item.task, projectName: item.project.safeName)
                                     }
                                 }
                             }
@@ -108,7 +110,7 @@ struct SearchView: View {
             }
             .navigationTitle("Search")
             .navigationDestination(for: UUID.self) { projectID in
-                if let project = store.projects.first(where: { $0.id == projectID }) {
+                if let project = store.projects.first(where: { $0.safeID == projectID }) {
                     ProjectDetailView(project: project)
                 }
             }

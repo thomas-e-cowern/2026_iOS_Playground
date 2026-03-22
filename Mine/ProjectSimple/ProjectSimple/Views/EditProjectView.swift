@@ -24,12 +24,12 @@ struct EditProjectView: View {
 
     init(project: Project) {
         self.project = project
-        _name = State(initialValue: project.name)
-        _description = State(initialValue: project.descriptionText)
-        _startDate = State(initialValue: project.startDate)
-        _endDate = State(initialValue: project.endDate)
-        _selectedColor = State(initialValue: project.colorName)
-        _selectedCategory = State(initialValue: project.category)
+        _name = State(initialValue: project.safeName)
+        _description = State(initialValue: project.safeDescription)
+        _startDate = State(initialValue: project.safeStartDate)
+        _endDate = State(initialValue: project.safeEndDate)
+        _selectedColor = State(initialValue: project.safeColorName)
+        _selectedCategory = State(initialValue: project.safeCategory)
     }
 
     var body: some View {

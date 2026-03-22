@@ -14,6 +14,8 @@ struct CalendarView: View {
     }
 
     var body: some View {
+        // Read refreshToken to re-evaluate when data changes via sync.
+        let _ = store.refreshToken
         NavigationStack {
             Group {
                 if sizeClass == .regular {
@@ -43,7 +45,7 @@ struct CalendarView: View {
                 }
             }
             .navigationDestination(for: UUID.self) { projectID in
-                if let project = store.projects.first(where: { $0.id == projectID }) {
+                if let project = store.projects.first(where: { $0.safeID == projectID }) {
                     ProjectDetailView(project: project)
                 }
             }
@@ -164,9 +166,9 @@ struct CalendarView: View {
 
                 if !tasksForDay.isEmpty {
                     HStack(spacing: 2) {
-                        ForEach(tasksForDay.prefix(3), id: \.task.id) { item in
+                        ForEach(tasksForDay.prefix(3), id: \.task.safeID) { item in
                             Circle()
-                                .fill(Color(projectColor(item.project.colorName)))
+                                .fill(Color(projectColor(item.project.safeColorName)))
                                 .frame(width: 5, height: 5)
                         }
                     }
@@ -209,8 +211,8 @@ struct CalendarView: View {
                     }
                 } else {
                     List {
-                        ForEach(tasksForDay, id: \.task.id) { item in
-                            NavigationLink(value: item.project.id) {
+                        ForEach(tasksForDay, id: \.task.safeID) { item in
+                            NavigationLink(value: item.project.safeID) {
                                 CalendarTaskRow(project: item.project, task: item.task)
                             }
                         }
@@ -244,8 +246,8 @@ struct CalendarView: View {
                     .accessibilityLabel("\(overdue.count) overdue task\(overdue.count == 1 ? "" : "s")")
 
                     List {
-                        ForEach(overdue, id: \.task.id) { item in
-                            NavigationLink(value: item.project.id) {
+                        ForEach(overdue, id: \.task.safeID) { item in
+                            NavigationLink(value: item.project.safeID) {
                                 CalendarTaskRow(project: item.project, task: item.task)
                             }
                         }

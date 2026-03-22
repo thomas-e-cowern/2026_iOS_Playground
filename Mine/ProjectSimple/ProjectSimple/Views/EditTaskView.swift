@@ -20,13 +20,13 @@ struct EditTaskView: View {
     init(task: ProjectTask, projectID: UUID) {
         self.task = task
         self.projectID = projectID
-        _title = State(initialValue: task.title)
-        _details = State(initialValue: task.details)
-        _dueDate = State(initialValue: task.dueDate)
-        _priority = State(initialValue: task.priority)
-        _status = State(initialValue: task.status)
-        _recurrenceRule = State(initialValue: task.recurrenceRule)
-        _steps = State(initialValue: task.steps)
+        _title = State(initialValue: task.safeTitle)
+        _details = State(initialValue: task.safeDetails)
+        _dueDate = State(initialValue: task.safeDueDate)
+        _priority = State(initialValue: task.safePriority)
+        _status = State(initialValue: task.safeStatus)
+        _recurrenceRule = State(initialValue: task.safeRecurrenceRule)
+        _steps = State(initialValue: task.safeSteps)
     }
 
     var body: some View {
@@ -111,7 +111,7 @@ struct EditTaskView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         store.pushUndo()
-                        let wasCompleted = task.status == .completed
+                        let wasCompleted = task.safeStatus == .completed
                         let updated = task
                         updated.title = title
                         updated.details = details
@@ -129,7 +129,7 @@ struct EditTaskView: View {
 
                         if status == .completed && !wasCompleted {
                             HapticManager.taskCompleted()
-                            if let project = store.projects.first(where: { $0.id == projectID }),
+                            if let project = store.projects.first(where: { $0.safeID == projectID }),
                                project.completionPercentage == 1.0 {
                                 HapticManager.milestoneReached()
                             }

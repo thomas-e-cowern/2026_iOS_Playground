@@ -2,46 +2,73 @@ import SwiftData
 import Foundation
 
 enum SharedModelContainer {
-    static let appGroupIdentifier = "group.mobilesoftwareservices.ProjectSimple"
+    static let appGroupIdentifier = "group.mss.ProjectSimple"
 
+    /// Creates the main app's ModelContainer with CloudKit sync enabled.
     static func create() throws -> ModelContainer {
         let schema = Schema([Project.self, ProjectTask.self])
 
-        // Ensure the Application Support directory exists inside the
-        // shared App Group container before CoreData tries to open the
-        // store. Without this, the first launch on a new device/simulator
-        // logs "parent directory path reported as missing" errors.
-        if let groupURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        ) {
-            let supportDir = groupURL.appending(path: "Library/Application Support")
-            try? FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+        // Explicitly place the store in the app's private Application
+        // Support directory (NOT the App Group).  When an App Group
+        // entitlement is present, SwiftData may auto-select the shared
+        // container, which can interfere with CloudKit mirroring.
+        let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first!
+        try? FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true)
+        let storeURL = appSupport.appendingPathComponent("ProjectSimple.store")
+
+        let config = ModelConfiguration(
+            schema: schema,
+            url: storeURL,
+            cloudKitDatabase: .private("iCloud.mss.ProjectSimple")
+        )
+
+        do {
+            let container = try ModelContainer(for: schema, configurations: config)
+            print("✅ ModelContainer created with CloudKit sync enabled")
+            print("✅ Store URL: \(config.url)")
+            return container
+        } catch {
+            print("⚠️ CloudKit ModelContainer failed: \(error)")
+            print("⚠️ Falling back to local-only storage — SYNC WILL NOT WORK")
+
+            let localConfig = ModelConfiguration(
+                schema: schema,
+                url: storeURL,
+                cloudKitDatabase: .none
+            )
+            return try ModelContainer(for: schema, configurations: localConfig)
+        }
+    }
+
+    /// Creates a local-only ModelContainer in the App Group container,
+    /// suitable for the widget extension (which cannot use CloudKit).
+    static func createForWidget() throws -> ModelContainer {
+        let schema = Schema([Project.self, ProjectTask.self])
+
+        if let dir = appGroupSupportDirectory() {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
 
         let config = ModelConfiguration(
             "ProjectSimple",
             schema: schema,
-            groupContainer: .identifier(appGroupIdentifier)
+            groupContainer: .identifier(appGroupIdentifier),
+            cloudKitDatabase: .none
         )
 
-        do {
-            return try ModelContainer(for: schema, configurations: config)
-        } catch {
-            // Schema migration failed — remove the incompatible store and retry
-            let groupURL = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: appGroupIdentifier
-            )
-            if let storeURL = groupURL?.appending(path: "Library/Application Support/ProjectSimple.store") {
-                let related = [
-                    storeURL,
-                    storeURL.appendingPathExtension("shm"),
-                    storeURL.appendingPathExtension("wal")
-                ]
-                for url in related {
-                    try? FileManager.default.removeItem(at: url)
-                }
-            }
-            return try ModelContainer(for: schema, configurations: config)
-        }
+        return try ModelContainer(for: schema, configurations: config)
     }
+
+    // MARK: - Helpers
+
+    private static func appGroupSupportDirectory() -> URL? {
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        )?.appending(path: "Library/Application Support")
+    }
+
+
 }

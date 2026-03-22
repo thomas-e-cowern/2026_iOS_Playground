@@ -29,28 +29,28 @@ extension PDFProjectInfo {
     init(from project: Project) {
         let active = project.activeTasks
         let sorted = active.sorted { a, b in
-            if a.status == .completed && b.status != .completed { return false }
-            if a.status != .completed && b.status == .completed { return true }
-            if a.priority != b.priority { return a.priority < b.priority }
-            return a.dueDate < b.dueDate
+            if a.safeStatus == .completed && b.safeStatus != .completed { return false }
+            if a.safeStatus != .completed && b.safeStatus == .completed { return true }
+            if a.safePriority != b.safePriority { return a.safePriority < b.safePriority }
+            return a.safeDueDate < b.safeDueDate
         }
-        self.name = project.name
-        self.descriptionText = project.descriptionText
-        self.category = project.category.rawValue
-        self.startDate = project.startDate
-        self.endDate = project.endDate
+        self.name = project.safeName
+        self.descriptionText = project.safeDescription
+        self.category = project.safeCategory.rawValue
+        self.startDate = project.safeStartDate
+        self.endDate = project.safeEndDate
         self.completionPercentage = project.completionPercentage
-        self.completedCount = active.filter { $0.status == .completed }.count
-        self.inProgressCount = active.filter { $0.status == .inProgress }.count
-        self.notStartedCount = active.filter { $0.status == .notStarted }.count
+        self.completedCount = active.filter { $0.safeStatus == .completed }.count
+        self.inProgressCount = active.filter { $0.safeStatus == .inProgress }.count
+        self.notStartedCount = active.filter { $0.safeStatus == .notStarted }.count
         self.tasks = sorted.map { task in
             PDFTaskInfo(
-                title: task.title,
-                details: task.details,
-                dueDate: task.dueDate,
-                status: task.status.rawValue,
-                priority: task.priority.rawValue,
-                priorityColorName: task.priority.color
+                title: task.safeTitle,
+                details: task.safeDetails,
+                dueDate: task.safeDueDate,
+                status: task.safeStatus.rawValue,
+                priority: task.safePriority.rawValue,
+                priorityColorName: task.safePriority.color
             )
         }
     }
@@ -118,10 +118,11 @@ struct PDFGenerator {
 
             // Tasks section
             ensureSpace(40)
-            yPosition = drawSectionHeader("Tasks (\(project.tasks.count))", at: yPosition)
+            let projectTasks = project.tasks
+            yPosition = drawSectionHeader("Tasks (\(projectTasks.count))", at: yPosition)
             yPosition += 8
 
-            if project.tasks.isEmpty {
+            if projectTasks.isEmpty {
                 yPosition = drawText(
                     "No active tasks.",
                     at: yPosition,
@@ -129,7 +130,7 @@ struct PDFGenerator {
                     color: .secondaryLabel
                 )
             } else {
-                for (index, task) in project.tasks.enumerated() {
+                for (index, task) in projectTasks.enumerated() {
                     let estimatedHeight = estimateTaskHeight(task)
                     ensureSpace(estimatedHeight)
                     yPosition = drawTask(task, index: index, at: yPosition)

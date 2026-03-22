@@ -38,11 +38,11 @@ struct OverdueTasksProvider: TimelineProvider {
 
     private func fetchOverdueTasks() -> OverdueTasksEntry {
         do {
-            let container = try SharedModelContainer.create()
+            let container = try SharedModelContainer.createForWidget()
             let context = ModelContext(container)
 
             let descriptor = FetchDescriptor<Project>(
-                predicate: #Predicate<Project> { !$0.isArchived }
+                predicate: #Predicate<Project> { $0.isArchived != true }
             )
             let projects = (try? context.fetch(descriptor)) ?? []
 
@@ -52,8 +52,8 @@ struct OverdueTasksProvider: TimelineProvider {
             var overdueTasks: [(title: String, dueDate: Date)] = []
             for project in projects {
                 for task in project.activeTasks {
-                    if task.status != .completed && task.dueDate < startOfToday {
-                        overdueTasks.append((title: task.title, dueDate: task.dueDate))
+                    if task.safeStatus != .completed && task.safeDueDate < startOfToday {
+                        overdueTasks.append((title: task.safeTitle, dueDate: task.safeDueDate))
                     }
                 }
             }

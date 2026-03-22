@@ -31,8 +31,8 @@ struct WatchContentView: View {
         let overdue = store.overdueTasks()
         if !overdue.isEmpty {
             Section {
-                ForEach(overdue, id: \.task.id) { item in
-                    WatchTaskRow(task: item.task, projectName: item.project.name)
+                ForEach(overdue, id: \.task.safeID) { item in
+                    WatchTaskRow(task: item.task, projectName: item.project.safeName)
                 }
             } header: {
                 HStack {
@@ -60,8 +60,8 @@ struct WatchContentView: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                ForEach(today, id: \.task.id) { item in
-                    WatchTaskRow(task: item.task, projectName: item.project.name)
+                ForEach(today, id: \.task.safeID) { item in
+                    WatchTaskRow(task: item.task, projectName: item.project.safeName)
                 }
             }
         } header: {

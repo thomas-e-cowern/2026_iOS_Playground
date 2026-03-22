@@ -8,30 +8,33 @@
 import SwiftUI
 
 struct ProjectRow: View {
+    @Environment(ProjectStore.self) private var store
     let project: Project
 
     var body: some View {
+        // Read refreshToken to force re-evaluation when CloudKit data arrives.
+        let _ = store.refreshToken
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 8)
-                .fill(color(for: project.colorName))
+                .fill(color(for: project.safeColorName))
                 .frame(width: 6, height: 50)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(project.name)
+                Text(project.safeName)
                     .font(.headline)
 
-                Text(project.descriptionText)
+                Text(project.safeDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
                 HStack(spacing: 12) {
-                    Label(project.category.rawValue, systemImage: project.category.icon)
+                    Label(project.safeCategory.rawValue, systemImage: project.safeCategory.icon)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
-                    Label("\(project.tasks.count) tasks", systemImage: "checklist")
+                    Label("\(project.safeTasks.count) tasks", systemImage: "checklist")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
@@ -47,7 +50,7 @@ struct ProjectRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(project.name), \(project.category.rawValue), \(project.tasks.count) tasks, \(Int(project.completionPercentage * 100)) percent complete")
+        .accessibilityLabel("\(project.safeName), \(project.safeCategory.rawValue), \(project.safeTasks.count) tasks, \(Int(project.completionPercentage * 100)) percent complete")
     }
 
     private func color(for name: String) -> Color {

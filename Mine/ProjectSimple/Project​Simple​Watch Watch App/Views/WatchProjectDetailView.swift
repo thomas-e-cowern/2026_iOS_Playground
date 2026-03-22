@@ -7,15 +7,15 @@ struct WatchProjectDetailView: View {
     private var sortedTasks: [ProjectTask] {
         project.activeTasks.sorted { lhs, rhs in
             // Incomplete before complete
-            if (lhs.status == .completed) != (rhs.status == .completed) {
-                return lhs.status != .completed
+            if (lhs.safeStatus == .completed) != (rhs.safeStatus == .completed) {
+                return lhs.safeStatus != .completed
             }
             // Then by priority (high first)
-            if lhs.priority != rhs.priority {
-                return lhs.priority < rhs.priority
+            if lhs.safePriority != rhs.safePriority {
+                return lhs.safePriority < rhs.safePriority
             }
             // Then by due date
-            return lhs.dueDate < rhs.dueDate
+            return lhs.safeDueDate < rhs.safeDueDate
         }
     }
 
@@ -37,10 +37,10 @@ struct WatchProjectDetailView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(sortedTasks) { task in
-                    WatchTaskRow(task: task, projectName: project.name)
+                    WatchTaskRow(task: task, projectName: project.safeName)
                 }
             }
         }
-        .navigationTitle(project.name)
+        .navigationTitle(project.safeName)
     }
 }

@@ -31,7 +31,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 icon: UIApplicationShortcutIcon(systemImageName: "folder.badge.plus")
             )
         ]
+        // Register for remote notifications so CloudKit can push sync updates
+        application.registerForRemoteNotifications()
         return true
+    }
+
+    nonisolated func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {
+        // CloudKit silent pushes arrive here; the underlying
+        // NSPersistentCloudKitContainer handles the actual import.
+        return .newData
     }
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
@@ -66,7 +74,7 @@ struct ProjectSimpleApp: App {
         do {
             container = try SharedModelContainer.create()
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            fatalError("Failed to create ModelContainer (even local fallback): \(error)")
         }
 
         do {
@@ -98,6 +106,7 @@ struct ProjectSimpleApp: App {
 /// Wrapper that creates ProjectStore from the main-actor model context
 struct ContentViewWrapper: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(NotificationManager.self) private var notificationManager
     @State private var store: ProjectStore?
 
@@ -107,7 +116,7 @@ struct ContentViewWrapper: View {
                 ContentView()
                     .environment(store)
             } else {
-                ProgressView()
+                SplashView()
             }
         }
         .task {
@@ -119,5 +128,46 @@ struct ContentViewWrapper: View {
                 await notificationManager.rescheduleAll(for: newStore.projects)
             }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                store?.refreshAfterRemoteChange()
+            }
+        }
     }
 }
+// MARK: - Splash Screen
+
+struct SplashView: View {
+    @State private var showSyncMessage = false
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "checklist")
+                .font(.system(size: 64))
+                .foregroundStyle(.blue)
+
+            Text("ProjectSimple")
+                .font(.largeTitle.bold())
+
+            VStack(spacing: 12) {
+                ProgressView()
+                    .controlSize(.regular)
+
+                Text(showSyncMessage ? "Syncing your data..." : "Loading...")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .animation(.easeInOut, value: showSyncMessage)
+            }
+
+            Spacer()
+            Spacer()
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(2))
+            showSyncMessage = true
+        }
+    }
+}
+

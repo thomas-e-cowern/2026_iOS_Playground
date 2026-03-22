@@ -10,7 +10,7 @@ class WatchProjectStore {
     private(set) var projects: [Project] = []
 
     var activeProjects: [Project] {
-        projects.filter { !$0.isArchived }
+        projects.filter { !$0.safeIsArchived }
     }
 
     init(modelContext: ModelContext) {
@@ -32,12 +32,12 @@ class WatchProjectStore {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in activeProjects {
             for task in project.activeTasks {
-                if task.status != .completed && task.dueDate < startOfToday {
+                if task.safeStatus != .completed && task.safeDueDate < startOfToday {
                     results.append((project: project, task: task))
                 }
             }
         }
-        return results.sorted { $0.task.dueDate < $1.task.dueDate }
+        return results.sorted { $0.task.safeDueDate < $1.task.safeDueDate }
     }
 
     func todayTasks() -> [(project: Project, task: ProjectTask)] {
@@ -49,29 +49,29 @@ class WatchProjectStore {
         var results: [(project: Project, task: ProjectTask)] = []
         for project in activeProjects {
             for task in project.activeTasks {
-                if task.status != .completed
-                    && task.dueDate >= startOfToday
-                    && task.dueDate < endOfToday {
+                if task.safeStatus != .completed
+                    && task.safeDueDate >= startOfToday
+                    && task.safeDueDate < endOfToday {
                     results.append((project: project, task: task))
                 }
             }
         }
-        return results.sorted { $0.task.priority < $1.task.priority }
+        return results.sorted { $0.task.safePriority < $1.task.safePriority }
     }
 
     // MARK: - Mutations
 
     func cycleTaskStatus(_ task: ProjectTask) {
-        let previousStatus = task.status
-        switch task.status {
+        let previousStatus = task.safeStatus
+        switch task.safeStatus {
         case .notStarted: task.status = .inProgress
         case .inProgress: task.status = .completed
         case .completed: task.status = .notStarted
         }
 
-        if task.status == .completed && previousStatus != .completed {
+        if task.safeStatus == .completed && previousStatus != .completed {
             task.completedDate = Date.now
-        } else if task.status != .completed {
+        } else if task.safeStatus != .completed {
             task.completedDate = nil
         }
 
@@ -80,8 +80,8 @@ class WatchProjectStore {
     }
 
     func toggleStep(stepID: UUID, in task: ProjectTask) {
-        if let index = task.steps.firstIndex(where: { $0.id == stepID }) {
-            task.steps[index].isCompleted.toggle()
+        if let index = task.safeSteps.firstIndex(where: { $0.id == stepID }) {
+            task.steps?[index].isCompleted.toggle()
             save()
             WKInterfaceDevice.current().play(.click)
         }

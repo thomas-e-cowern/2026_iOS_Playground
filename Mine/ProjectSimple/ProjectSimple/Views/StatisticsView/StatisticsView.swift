@@ -5,6 +5,8 @@ struct StatisticsView: View {
     @Environment(ProjectStore.self) private var store
 
     var body: some View {
+        // Read refreshToken to re-evaluate when data changes via sync.
+        let _ = store.refreshToken
         NavigationStack {
             List {
                 overviewSection
@@ -45,12 +47,12 @@ struct StatisticsView: View {
     }
 
     private var allCompletedTasks: [ProjectTask] {
-        allActiveTasks.filter { $0.status == .completed }
+        allActiveTasks.filter { $0.safeStatus == .completed }
     }
 
     private var overdueTasks: [ProjectTask] {
         let startOfToday = Calendar.current.startOfDay(for: .now)
-        return allActiveTasks.filter { $0.status != .completed && $0.dueDate < startOfToday }
+        return allActiveTasks.filter { $0.safeStatus != .completed && $0.safeDueDate < startOfToday }
     }
 
     private var tasksCompletedThisWeek: [ProjectTask] {
@@ -124,16 +126,16 @@ struct StatisticsView: View {
                     .sorted { ($0.completedDate ?? .distantPast) > ($1.completedDate ?? .distantPast) }
                     .prefix(5)
 
-                ForEach(Array(recentTasks), id: \.id) { task in
+                ForEach(Array(recentTasks), id: \.safeID) { task in
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                             .font(.caption)
                         VStack(alignment: .leading) {
-                            Text(task.title)
+                            Text(task.safeTitle)
                                 .font(.subheadline)
-                            if let project = store.activeProjects.first(where: { $0.tasks.contains(where: { $0.id == task.id }) }) {
-                                Text(project.name)
+                            if let project = store.activeProjects.first(where: { $0.safeTasks.contains(where: { $0.safeID == task.safeID }) }) {
+                                Text(project.safeName)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -238,10 +240,10 @@ struct StatisticsView: View {
     @ViewBuilder
     private var tasksByPrioritySection: some View {
         Section("Tasks by Priority") {
-            let activeTasks = allActiveTasks.filter { $0.status != .completed }
-            let highCount = activeTasks.filter { $0.priority == .high }.count
-            let mediumCount = activeTasks.filter { $0.priority == .medium }.count
-            let lowCount = activeTasks.filter { $0.priority == .low }.count
+            let activeTasks = allActiveTasks.filter { $0.safeStatus != .completed }
+            let highCount = activeTasks.filter { $0.safePriority == .high }.count
+            let mediumCount = activeTasks.filter { $0.safePriority == .medium }.count
+            let lowCount = activeTasks.filter { $0.safePriority == .low }.count
 
             let priorityData: [(name: String, count: Int, color: Color)] = [
                 ("High", highCount, .red),
@@ -392,7 +394,7 @@ struct StatisticsView: View {
         for project in store.activeProjects {
             let taskCount = project.activeTasks.count
             if taskCount > 0 {
-                counts[project.category.rawValue, default: 0] += taskCount
+                counts[project.safeCategory.rawValue, default: 0] += taskCount
             }
         }
         return counts

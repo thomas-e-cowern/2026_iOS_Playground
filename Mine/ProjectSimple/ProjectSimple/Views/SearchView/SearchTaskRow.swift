@@ -16,13 +16,13 @@ struct SearchTaskRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: task.status.icon)
+            Image(systemName: task.safeStatus.icon)
                 .foregroundStyle(statusColor)
                 .font(.title3)
                 .accessibilityHidden(true)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
+                Text(task.safeTitle)
                     .font(.subheadline.weight(.medium))
                 
                 HStack(spacing: 8) {
@@ -30,7 +30,7 @@ struct SearchTaskRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    Text(task.priority.rawValue)
+                    Text(task.safePriority.rawValue)
                         .font(.caption2.weight(.semibold))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -38,24 +38,24 @@ struct SearchTaskRow: View {
                         .foregroundStyle(priorityColor)
                         .clipShape(Capsule())
                     
-                    Text(task.dueDate, style: .date)
+                    Text(task.safeDueDate, style: .date)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    if task.recurrenceRule != .none {
+                    if task.safeRecurrenceRule != .none {
                         Image(systemName: "arrow.clockwise")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                     
-                    if !task.steps.isEmpty {
+                    if !task.safeSteps.isEmpty {
                         HStack(spacing: 2) {
                             Image(systemName: "checklist")
                                 .font(.caption2)
-                            Text("\(task.completedStepsCount)/\(task.steps.count)")
+                            Text("\(task.completedStepsCount)/\(task.safeSteps.count)")
                                 .font(.caption2)
                         }
-                        .foregroundStyle(task.completedStepsCount == task.steps.count ? .green : .secondary)
+                        .foregroundStyle(task.completedStepsCount == task.safeSteps.count ? .green : .secondary)
                     }
                 }
             }
@@ -64,11 +64,11 @@ struct SearchTaskRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(task.title), \(projectName), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.recurrenceRule != .none ? ", repeats \(task.recurrenceRule.rawValue.lowercased())" : "")\(!task.steps.isEmpty ? ", \(task.completedStepsCount) of \(task.steps.count) steps done" : "")")
+        .accessibilityLabel("\(task.safeTitle), \(projectName), \(task.safeStatus.rawValue), \(task.safePriority.rawValue) priority\(task.safeRecurrenceRule != .none ? ", repeats \(task.safeRecurrenceRule.rawValue.lowercased())" : "")\(!task.safeSteps.isEmpty ? ", \(task.completedStepsCount) of \(task.safeSteps.count) steps done" : "")")
     }
     
     private var statusColor: Color {
-        switch task.status {
+        switch task.safeStatus {
         case .notStarted: return .gray
         case .inProgress: return .blue
         case .completed: return .green
@@ -76,7 +76,7 @@ struct SearchTaskRow: View {
     }
     
     private var priorityColor: Color {
-        switch task.priority {
+        switch task.safePriority {
         case .low: return .green
         case .medium: return .orange
         case .high: return .red

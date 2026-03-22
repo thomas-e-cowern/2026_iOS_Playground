@@ -13,22 +13,22 @@ struct ArchivedTaskRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: task.status.icon)
+            Image(systemName: task.safeStatus.icon)
                 .foregroundStyle(statusColor)
                 .font(.title3)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
+                Text(task.safeTitle)
                     .font(.subheadline.weight(.medium))
-                    .strikethrough(task.status == .completed, color: .secondary)
+                    .strikethrough(task.safeStatus == .completed, color: .secondary)
 
                 HStack(spacing: 8) {
-                    Text(task.dueDate, style: .date)
+                    Text(task.safeDueDate, style: .date)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Text(task.priority.rawValue)
+                    Text(task.safePriority.rawValue)
                         .font(.caption2.weight(.semibold))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -36,7 +36,7 @@ struct ArchivedTaskRow: View {
                         .foregroundStyle(priorityColor)
                         .clipShape(Capsule())
 
-                    if task.isArchived {
+                    if task.safeIsArchived {
                         Text("Archived")
                             .font(.caption2.weight(.semibold))
                             .padding(.horizontal, 6)
@@ -52,11 +52,11 @@ struct ArchivedTaskRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(task.title), \(task.status.rawValue), \(task.priority.rawValue) priority\(task.isArchived ? ", archived" : "")")
+        .accessibilityLabel("\(task.safeTitle), \(task.safeStatus.rawValue), \(task.safePriority.rawValue) priority\(task.safeIsArchived ? ", archived" : "")")
     }
 
     private var statusColor: Color {
-        switch task.status {
+        switch task.safeStatus {
         case .notStarted: return .gray
         case .inProgress: return .blue
         case .completed: return .green
@@ -64,7 +64,7 @@ struct ArchivedTaskRow: View {
     }
 
     private var priorityColor: Color {
-        switch task.priority {
+        switch task.safePriority {
         case .low: return .green
         case .medium: return .orange
         case .high: return .red

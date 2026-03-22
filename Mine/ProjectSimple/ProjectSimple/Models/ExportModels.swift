@@ -14,16 +14,16 @@ struct ExportableTask: Codable {
     let completedDate: Date?
 
     init(from task: ProjectTask) {
-        self.id = task.id
-        self.title = task.title
-        self.details = task.details
-        self.dueDate = task.dueDate
-        self.status = task.status
-        self.priority = task.priority
-        self.isArchived = task.isArchived
-        self.recurrenceRule = task.recurrenceRule
-        self.hasGeneratedNextOccurrence = task.hasGeneratedNextOccurrence
-        self.steps = task.steps
+        self.id = task.safeID
+        self.title = task.safeTitle
+        self.details = task.safeDetails
+        self.dueDate = task.safeDueDate
+        self.status = task.safeStatus
+        self.priority = task.safePriority
+        self.isArchived = task.safeIsArchived
+        self.recurrenceRule = task.safeRecurrenceRule
+        self.hasGeneratedNextOccurrence = task.safeHasGeneratedNextOccurrence
+        self.steps = task.safeSteps
         self.completedDate = task.completedDate
     }
 
@@ -57,15 +57,15 @@ struct ExportableProject: Codable {
     let tasks: [ExportableTask]
 
     init(from project: Project) {
-        self.id = project.id
-        self.name = project.name
-        self.descriptionText = project.descriptionText
-        self.startDate = project.startDate
-        self.endDate = project.endDate
-        self.colorName = project.colorName
-        self.category = project.category
-        self.isArchived = project.isArchived
-        self.tasks = project.tasks.map { ExportableTask(from: $0) }
+        self.id = project.safeID
+        self.name = project.safeName
+        self.descriptionText = project.safeDescription
+        self.startDate = project.safeStartDate
+        self.endDate = project.safeEndDate
+        self.colorName = project.safeColorName
+        self.category = project.safeCategory
+        self.isArchived = project.safeIsArchived
+        self.tasks = project.safeTasks.map { ExportableTask(from: $0) }
     }
 
     func toProject() -> Project {

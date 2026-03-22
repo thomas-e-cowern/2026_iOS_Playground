@@ -47,17 +47,17 @@ class NotificationManager: @unchecked Sendable {
             // Schedule project end-date notifications
             if project.completionPercentage < 1.0 {
                 // Due today notification (9 AM on the end date)
-                if let dueTodayDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: project.endDate),
+                if let dueTodayDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: project.safeEndDate),
                    dueTodayDate > now {
                     let content = UNMutableNotificationContent()
                     content.title = "Project Due Today"
-                    content.body = "\"\(project.name)\" is due today."
+                    content.body = "\"\(project.safeName)\" is due today."
                     content.sound = .default
 
                     let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: dueTodayDate)
                     let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
                     let request = UNNotificationRequest(
-                        identifier: "project-due-\(project.id.uuidString)",
+                        identifier: "project-due-\(project.safeID.uuidString)",
                         content: content,
                         trigger: trigger
                     )
@@ -65,18 +65,18 @@ class NotificationManager: @unchecked Sendable {
                 }
 
                 // 5-day warning notification (9 AM, 5 days before end date)
-                if let warningDate = calendar.date(byAdding: .day, value: -5, to: project.endDate),
+                if let warningDate = calendar.date(byAdding: .day, value: -5, to: project.safeEndDate),
                    let warningTriggerDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: warningDate),
                    warningTriggerDate > now {
                     let content = UNMutableNotificationContent()
                     content.title = "Project Due Soon"
-                    content.body = "\"\(project.name)\" is due in 5 days."
+                    content.body = "\"\(project.safeName)\" is due in 5 days."
                     content.sound = .default
 
                     let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: warningTriggerDate)
                     let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
                     let request = UNNotificationRequest(
-                        identifier: "project-warning-\(project.id.uuidString)",
+                        identifier: "project-warning-\(project.safeID.uuidString)",
                         content: content,
                         trigger: trigger
                     )
@@ -85,41 +85,41 @@ class NotificationManager: @unchecked Sendable {
             }
 
             // Schedule task notifications
-            for task in project.tasks where task.status != .completed {
+            for task in project.safeTasks where task.safeStatus != .completed {
                 // Due today notification (9 AM on the due date)
-                if let dueTodayDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: task.dueDate),
+                if let dueTodayDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: task.safeDueDate),
                    dueTodayDate > now {
                     let content = UNMutableNotificationContent()
                     content.title = "Task Due Today"
-                    content.body = "\"\(task.title)\" in \(project.name) is due today."
+                    content.body = "\"\(task.safeTitle)\" in \(project.safeName) is due today."
                     content.sound = .default
 
                     let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: dueTodayDate)
                     let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
                     let request = UNNotificationRequest(
-                        identifier: "task-due-\(task.id.uuidString)",
+                        identifier: "task-due-\(task.safeID.uuidString)",
                         content: content,
                         trigger: trigger
                     )
                     try? await center.add(request)
-                } else if calendar.isDateInToday(task.dueDate) {
+                } else if calendar.isDateInToday(task.safeDueDate) {
                     // Task is due today but 9 AM already passed — count for badge
                     badgeCount += 1
                 }
 
                 // 5-day warning notification (9 AM, 5 days before due date)
-                if let warningDate = calendar.date(byAdding: .day, value: -5, to: task.dueDate),
+                if let warningDate = calendar.date(byAdding: .day, value: -5, to: task.safeDueDate),
                    let warningTriggerDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: warningDate),
                    warningTriggerDate > now {
                     let content = UNMutableNotificationContent()
                     content.title = "Task Due Soon"
-                    content.body = "\"\(task.title)\" in \(project.name) is due in 5 days."
+                    content.body = "\"\(task.safeTitle)\" in \(project.safeName) is due in 5 days."
                     content.sound = .default
 
                     let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: warningTriggerDate)
                     let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
                     let request = UNNotificationRequest(
-                        identifier: "task-warning-\(task.id.uuidString)",
+                        identifier: "task-warning-\(task.safeID.uuidString)",
                         content: content,
                         trigger: trigger
                     )
@@ -129,8 +129,8 @@ class NotificationManager: @unchecked Sendable {
         }
 
         // Update badge with count of incomplete tasks due today or overdue
-        let overdueTasks = projects.flatMap { $0.tasks }
-            .filter { $0.status != .completed && calendar.startOfDay(for: $0.dueDate) <= calendar.startOfDay(for: now) }
+        let overdueTasks = projects.flatMap { $0.safeTasks }
+            .filter { $0.safeStatus != .completed && calendar.startOfDay(for: $0.safeDueDate) <= calendar.startOfDay(for: now) }
         badgeCount = overdueTasks.count
         updateBadge(count: badgeCount)
     }

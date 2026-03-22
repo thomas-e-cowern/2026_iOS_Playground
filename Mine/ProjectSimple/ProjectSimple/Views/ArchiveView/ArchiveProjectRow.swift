@@ -10,6 +10,8 @@ struct ArchiveView: View {
     }
 
     var body: some View {
+        // Read refreshToken to re-evaluate when data changes via sync.
+        let _ = store.refreshToken
         NavigationStack {
             VStack(spacing: 0) {
                 Picker("Section", selection: $selectedSection) {
@@ -60,7 +62,7 @@ struct ArchiveView: View {
     private var archivedContent: some View {
         let archivedProjects = store.archivedProjects
         let projectsWithArchivedTasks = store.activeProjects.filter { project in
-            project.tasks.contains { $0.isArchived }
+            project.safeTasks.contains { $0.safeIsArchived }
         }
 
         if archivedProjects.isEmpty && projectsWithArchivedTasks.isEmpty {
@@ -77,14 +79,14 @@ struct ArchiveView: View {
                             ArchivedProjectRow(project: project)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
-                                        store.deleteProject(project.id)
+                                        store.deleteProject(project.safeID)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button {
-                                        store.unarchiveProject(project.id)
+                                        store.unarchiveProject(project.safeID)
                                     } label: {
                                         Label("Unarchive", systemImage: "arrow.uturn.backward")
                                     }
@@ -95,19 +97,19 @@ struct ArchiveView: View {
                 }
 
                 ForEach(projectsWithArchivedTasks) { project in
-                    Section("Archived Tasks — \(project.name)") {
-                        ForEach(project.tasks.filter(\.isArchived)) { task in
-                            ArchivedTaskRow(task: task, projectName: project.name)
+                    Section("Archived Tasks — \(project.safeName)") {
+                        ForEach(project.safeTasks.filter(\.safeIsArchived)) { task in
+                            ArchivedTaskRow(task: task, projectName: project.safeName)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
-                                        store.deleteTask(task.id, from: project.id)
+                                        store.deleteTask(task.safeID, from: project.safeID)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button {
-                                        store.unarchiveTask(task.id, in: project.id)
+                                        store.unarchiveTask(task.safeID, in: project.safeID)
                                     } label: {
                                         Label("Unarchive", systemImage: "arrow.uturn.backward")
                                     }
@@ -127,7 +129,7 @@ struct ArchiveView: View {
     private var completedContent: some View {
         let fullyCompletedProjects = store.completedProjects
         let projectsWithCompletedTasks = store.activeProjects.filter { project in
-            project.activeTasks.contains { $0.status == .completed }
+            project.activeTasks.contains { $0.safeStatus == .completed }
         }
 
         if fullyCompletedProjects.isEmpty && projectsWithCompletedTasks.isEmpty {
@@ -144,7 +146,7 @@ struct ArchiveView: View {
                             ArchivedProjectRow(project: project)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button {
-                                        store.archiveProject(project.id)
+                                        store.archiveProject(project.safeID)
                                     } label: {
                                         Label("Archive", systemImage: "archivebox")
                                     }
@@ -155,12 +157,12 @@ struct ArchiveView: View {
                 }
 
                 ForEach(projectsWithCompletedTasks) { project in
-                    Section("Completed Tasks — \(project.name)") {
-                        ForEach(project.activeTasks.filter { $0.status == .completed }) { task in
-                            ArchivedTaskRow(task: task, projectName: project.name)
+                    Section("Completed Tasks — \(project.safeName)") {
+                        ForEach(project.activeTasks.filter { $0.safeStatus == .completed }) { task in
+                            ArchivedTaskRow(task: task, projectName: project.safeName)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button {
-                                        store.archiveTask(task.id, in: project.id)
+                                        store.archiveTask(task.safeID, in: project.safeID)
                                     } label: {
                                         Label("Archive", systemImage: "archivebox")
                                     }
@@ -172,7 +174,7 @@ struct ArchiveView: View {
                                         let updated = task
                                         updated.status = .inProgress
                                         updated.completedDate = nil
-                                        store.updateTask(updated, in: project.id)
+                                        store.updateTask(updated, in: project.safeID)
                                     } label: {
                                         Label("Reopen", systemImage: "arrow.uturn.backward")
                                     }
