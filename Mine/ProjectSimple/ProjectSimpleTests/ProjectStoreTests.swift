@@ -27,34 +27,36 @@ struct SwiftDataTests {
         let context = _testContainer.mainContext
         let projects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
         for project in projects {
-            let tasks = project.tasks
-            project.tasks.removeAll()
+            let tasks = project.tasks ?? []
+            project.tasks?.removeAll()
             for task in tasks {
                 context.delete(task)
             }
             context.delete(project)
         }
         try? context.save()
-        return ProjectStore(modelContext: context)
+        let store = ProjectStore(modelContext: context)
+        store.loadSampleData()
+        return store
     }
 
     // MARK: - ProjectTask Init
 
     @Test func taskDefaultInitValues() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         let task = ProjectTask(title: "Test", dueDate: .now)
         store.addTask(task, to: projectID)
-        #expect(task.title == "Test")
-        #expect(task.details == "")
-        #expect(task.status == .notStarted)
-        #expect(task.priority == .medium)
-        #expect(task.isArchived == false)
+        #expect(task.safeTitle == "Test")
+        #expect(task.safeDetails == "")
+        #expect(task.safeStatus == .notStarted)
+        #expect(task.safePriority == .medium)
+        #expect(task.safeIsArchived == false)
     }
 
     @Test func taskCustomInitValues() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         let date = Date.now
         let id = UUID()
         let task = ProjectTask(
@@ -66,11 +68,11 @@ struct SwiftDataTests {
             priority: .high
         )
         store.addTask(task, to: projectID)
-        #expect(task.id == id)
-        #expect(task.title == "Custom")
-        #expect(task.details == "Some details")
-        #expect(task.status == .completed)
-        #expect(task.priority == .high)
+        #expect(task.safeID == id)
+        #expect(task.safeTitle == "Custom")
+        #expect(task.safeDetails == "Some details")
+        #expect(task.safeStatus == .completed)
+        #expect(task.safePriority == .high)
     }
 
     // MARK: - Project Init
@@ -79,12 +81,12 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Test Project")
         store.addProject(project)
-        #expect(project.name == "Test Project")
+        #expect(project.safeName == "Test Project")
         #expect(project.descriptionText == "")
-        #expect(project.tasks.isEmpty)
+        #expect(project.safeTasks.isEmpty)
         #expect(project.colorName == "blue")
         #expect(project.category == .other)
-        #expect(project.isArchived == false)
+        #expect(project.safeIsArchived == false)
     }
 
     @Test func projectCustomCategoryInitValue() {
@@ -100,24 +102,24 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Filter Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         store.addTask(ProjectTask(title: "A", dueDate: .now), to: projectID)
         store.addTask(ProjectTask(title: "B", dueDate: .now, isArchived: true), to: projectID)
         store.addTask(ProjectTask(title: "C", dueDate: .now), to: projectID)
-        let updated = store.projects.first { $0.id == projectID }!
+        let updated = store.projects.first { $0.safeID == projectID }!
         #expect(updated.activeTasks.count == 2)
-        #expect(updated.activeTasks.allSatisfy { !$0.isArchived })
+        #expect(updated.activeTasks.allSatisfy { !$0.safeIsArchived })
     }
 
     @Test func completionPercentageIgnoresArchivedTasks() {
         let store = makeStore()
         let project = Project(name: "Mixed")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         store.addTask(ProjectTask(title: "A", dueDate: .now, status: .completed), to: projectID)
         store.addTask(ProjectTask(title: "B", dueDate: .now, status: .notStarted), to: projectID)
         store.addTask(ProjectTask(title: "C", dueDate: .now, status: .completed, isArchived: true), to: projectID)
-        let updated = store.projects.first { $0.id == projectID }!
+        let updated = store.projects.first { $0.safeID == projectID }!
         #expect(updated.completionPercentage == 0.5)
     }
 
@@ -125,7 +127,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Empty")
         store.addProject(project)
-        let updated = store.projects.first { $0.id == project.id }!
+        let updated = store.projects.first { $0.safeID == project.safeID }!
         #expect(updated.completionPercentage == 0)
     }
 
@@ -133,10 +135,10 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Done")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         store.addTask(ProjectTask(title: "A", dueDate: .now, status: .completed), to: projectID)
         store.addTask(ProjectTask(title: "B", dueDate: .now, status: .completed), to: projectID)
-        let updated = store.projects.first { $0.id == projectID }!
+        let updated = store.projects.first { $0.safeID == projectID }!
         #expect(updated.completionPercentage == 1.0)
     }
 
@@ -144,12 +146,12 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Partial")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         store.addTask(ProjectTask(title: "A", dueDate: .now, status: .completed), to: projectID)
         store.addTask(ProjectTask(title: "B", dueDate: .now, status: .inProgress), to: projectID)
         store.addTask(ProjectTask(title: "C", dueDate: .now, status: .notStarted), to: projectID)
         store.addTask(ProjectTask(title: "D", dueDate: .now, status: .completed), to: projectID)
-        let updated = store.projects.first { $0.id == projectID }!
+        let updated = store.projects.first { $0.safeID == projectID }!
         #expect(updated.completionPercentage == 0.5)
     }
 
@@ -157,10 +159,10 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "None")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         store.addTask(ProjectTask(title: "A", dueDate: .now, status: .notStarted), to: projectID)
         store.addTask(ProjectTask(title: "B", dueDate: .now, status: .inProgress), to: projectID)
-        let updated = store.projects.first { $0.id == projectID }!
+        let updated = store.projects.first { $0.safeID == projectID }!
         #expect(updated.completionPercentage == 0.0)
     }
 
@@ -169,14 +171,14 @@ struct SwiftDataTests {
     @Test func initLoadsSampleData() {
         let store = makeStore()
         #expect(store.projects.count == 1)
-        #expect(store.projects[0].name == "Getting Started")
+        #expect(store.projects[0].safeName == "Getting Started")
     }
 
     @Test func sampleProjectHasTasks() {
         let store = makeStore()
         let project = store.projects[0]
-        #expect(!project.tasks.isEmpty)
-        #expect(project.tasks.count == 6)
+        #expect(!project.safeTasks.isEmpty)
+        #expect(project.safeTasks.count == 6)
     }
 
     // MARK: - Add Project
@@ -193,7 +195,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Appended")
         store.addProject(project)
-        #expect(store.projects.contains { $0.name == "Appended" })
+        #expect(store.projects.contains { $0.safeName == "Appended" })
     }
 
     // MARK: - Delete Project
@@ -201,15 +203,15 @@ struct SwiftDataTests {
     @Test func deleteProjectRemovesCorrectProject() {
         let store = makeStore()
         let firstProject = store.activeProjects[0]
-        let firstProjectID = firstProject.id
+        let firstProjectID = firstProject.safeID
         store.deleteProject(firstProjectID)
-        #expect(store.projects.allSatisfy { $0.id != firstProjectID })
+        #expect(store.projects.allSatisfy { $0.safeID != firstProjectID })
     }
 
     @Test func deleteProjectDecreasesCount() {
         let store = makeStore()
         let initialCount = store.projects.count
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.deleteProject(projectID)
         #expect(store.projects.count == initialCount - 1)
     }
@@ -219,13 +221,13 @@ struct SwiftDataTests {
     @Test func addTaskToProject() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let initialTaskCount = project.tasks.count
+        let projectID = project.safeID
+        let initialTaskCount = project.safeTasks.count
         let task = ProjectTask(title: "New Task", dueDate: .now)
         store.addTask(task, to: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.count == initialTaskCount + 1)
-        #expect(updatedProject.tasks.contains { $0.title == "New Task" })
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.count == initialTaskCount + 1)
+        #expect(updatedProject.safeTasks.contains { $0.safeTitle == "New Task" })
     }
 
     @Test func addTaskToInvalidProjectDoesNothing() {
@@ -234,7 +236,7 @@ struct SwiftDataTests {
         let task = ProjectTask(title: "Orphan", dueDate: .now)
         store.addTask(task, to: bogusID)
         for project in store.projects {
-            #expect(project.tasks.allSatisfy { $0.title != "Orphan" })
+            #expect(project.safeTasks.allSatisfy { $0.safeTitle != "Orphan" })
         }
     }
 
@@ -243,34 +245,34 @@ struct SwiftDataTests {
     @Test func updateTaskChangesStatus() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let task = project.tasks[0]
-        let originalStatus = task.status
+        let projectID = project.safeID
+        let task = project.safeTasks[0]
+        let originalStatus = task.safeStatus
         task.status = (originalStatus == .completed) ? .notStarted : .completed
         store.updateTask(task, in: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let updatedTask = updatedProject.tasks.first { $0.id == task.id }
-        #expect(updatedTask?.status != originalStatus)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let updatedTask = updatedProject.safeTasks.first { $0.safeID == task.safeID }
+        #expect(updatedTask?.safeStatus != originalStatus)
     }
 
     @Test func updateTaskChangesTitle() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let task = project.tasks[0]
+        let projectID = project.safeID
+        let task = project.safeTasks[0]
         task.title = "Updated Title"
         store.updateTask(task, in: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let updatedTask = updatedProject.tasks.first { $0.id == task.id }
-        #expect(updatedTask?.title == "Updated Title")
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let updatedTask = updatedProject.safeTasks.first { $0.safeID == task.safeID }
+        #expect(updatedTask?.safeTitle == "Updated Title")
     }
 
     @Test func editTaskChangesAllFields() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let task = project.tasks[0]
-        let taskID = task.id
+        let projectID = project.safeID
+        let task = project.safeTasks[0]
+        let taskID = task.safeID
 
         // Simulate EditTaskView: copy values, modify, write back, then update
         task.title = "Edited Title"
@@ -282,31 +284,31 @@ struct SwiftDataTests {
         store.updateTask(task, in: projectID)
 
         // Re-fetch from store (simulates what the view sees after refresh)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let updatedTask = updatedProject.tasks.first { $0.id == taskID }
-        #expect(updatedTask?.title == "Edited Title")
-        #expect(updatedTask?.details == "Edited details")
-        #expect(updatedTask?.priority == .low)
-        #expect(updatedTask?.status == .completed)
-        #expect(Calendar.current.isDate(updatedTask!.dueDate, inSameDayAs: newDate))
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let updatedTask = updatedProject.safeTasks.first { $0.safeID == taskID }
+        #expect(updatedTask?.safeTitle == "Edited Title")
+        #expect(updatedTask?.safeDetails == "Edited details")
+        #expect(updatedTask?.safePriority == .low)
+        #expect(updatedTask?.safeStatus == .completed)
+        #expect(Calendar.current.isDate(updatedTask!.safeDueDate, inSameDayAs: newDate))
     }
 
     @Test func editTaskPersistsAfterRefetch() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let task = project.tasks[0]
-        let taskID = task.id
+        let projectID = project.safeID
+        let task = project.safeTasks[0]
+        let taskID = task.safeID
 
         task.title = "Persisted Edit"
         store.updateTask(task, in: projectID)
 
         // Fetch the task by looking it up via its UUID in the refreshed store
         let refetchedTask = store.projects
-            .first { $0.id == projectID }?
-            .tasks.first { $0.id == taskID }
+            .first { $0.safeID == projectID }?
+            .safeTasks.first { $0.safeID == taskID }
         #expect(refetchedTask != nil)
-        #expect(refetchedTask?.title == "Persisted Edit")
+        #expect(refetchedTask?.safeTitle == "Persisted Edit")
     }
 
     // MARK: - Delete Task
@@ -314,30 +316,30 @@ struct SwiftDataTests {
     @Test func deleteTaskRemovesFromProject() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let taskID = project.tasks[0].id
-        let initialCount = project.tasks.count
+        let projectID = project.safeID
+        let taskID = project.safeTasks[0].safeID
+        let initialCount = project.safeTasks.count
         store.deleteTask(taskID, from: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.count == initialCount - 1)
-        #expect(updatedProject.tasks.allSatisfy { $0.id != taskID })
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.count == initialCount - 1)
+        #expect(updatedProject.safeTasks.allSatisfy { $0.safeID != taskID })
     }
 
     @Test func deleteTaskWithInvalidProjectDoesNothing() {
         let store = makeStore()
-        let taskID = store.projects[0].tasks[0].id
-        let initialCount = store.projects[0].tasks.count
+        let taskID = store.projects[0].safeTasks[0].safeID
+        let initialCount = store.projects[0].safeTasks.count
         store.deleteTask(taskID, from: UUID())
-        #expect(store.projects[0].tasks.count == initialCount)
+        #expect(store.projects[0].safeTasks.count == initialCount)
     }
 
     @Test func deleteTaskWithInvalidTaskIDDoesNothing() {
         let store = makeStore()
-        let projectID = store.projects[0].id
-        let initialCount = store.projects[0].tasks.count
+        let projectID = store.projects[0].safeID
+        let initialCount = store.projects[0].safeTasks.count
         store.deleteTask(UUID(), from: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.count == initialCount)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.count == initialCount)
     }
 
     // MARK: - Overdue Tasks
@@ -347,7 +349,7 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let project = Project(name: "Overdue Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let pastTask = ProjectTask(
             title: "Past Task",
             dueDate: calendar.date(byAdding: .day, value: -3, to: .now)!,
@@ -355,7 +357,7 @@ struct SwiftDataTests {
         )
         store.addTask(pastTask, to: projectID)
         let overdue = store.overdueTasks()
-        #expect(overdue.contains { $0.task.title == "Past Task" })
+        #expect(overdue.contains { $0.task.safeTitle == "Past Task" })
     }
 
     @Test func overdueTasksExcludesCompletedTasks() {
@@ -363,7 +365,7 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let project = Project(name: "Done Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let doneTask = ProjectTask(
             title: "Done Past Task",
             dueDate: calendar.date(byAdding: .day, value: -2, to: .now)!,
@@ -371,7 +373,7 @@ struct SwiftDataTests {
         )
         store.addTask(doneTask, to: projectID)
         let overdue = store.overdueTasks()
-        #expect(overdue.allSatisfy { $0.task.title != "Done Past Task" })
+        #expect(overdue.allSatisfy { $0.task.safeTitle != "Done Past Task" })
     }
 
     @Test func overdueTasksExcludesFutureTasks() {
@@ -379,7 +381,7 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let project = Project(name: "Future Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let futureTask = ProjectTask(
             title: "Future Task",
             dueDate: calendar.date(byAdding: .day, value: 5, to: .now)!,
@@ -387,7 +389,7 @@ struct SwiftDataTests {
         )
         store.addTask(futureTask, to: projectID)
         let overdue = store.overdueTasks()
-        #expect(overdue.allSatisfy { $0.task.title != "Future Task" })
+        #expect(overdue.allSatisfy { $0.task.safeTitle != "Future Task" })
     }
 
     @Test func overdueTasksExcludesArchivedProjects() {
@@ -395,7 +397,7 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let project = Project(name: "Archived Overdue")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let pastTask = ProjectTask(
             title: "Archived Past",
             dueDate: calendar.date(byAdding: .day, value: -1, to: .now)!,
@@ -404,19 +406,19 @@ struct SwiftDataTests {
         store.addTask(pastTask, to: projectID)
         store.archiveProject(projectID)
         let overdue = store.overdueTasks()
-        #expect(overdue.allSatisfy { $0.task.title != "Archived Past" })
+        #expect(overdue.allSatisfy { $0.task.safeTitle != "Archived Past" })
     }
 
     @Test func overdueTasksSortedByDueDate() {
         let store = makeStore()
         let calendar = Calendar.current
         // Delete sample data projects to isolate this test
-        let ids = store.projects.map(\.id)
+        let ids = store.projects.map(\.safeID)
         for id in ids { store.deleteProject(id) }
 
         let project = Project(name: "Sort Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let older = ProjectTask(
             title: "Older",
             dueDate: calendar.date(byAdding: .day, value: -5, to: .now)!,
@@ -431,8 +433,8 @@ struct SwiftDataTests {
         store.addTask(older, to: projectID)
         let overdue = store.overdueTasks()
         #expect(overdue.count == 2)
-        #expect(overdue[0].task.title == "Older")
-        #expect(overdue[1].task.title == "Newer")
+        #expect(overdue[0].task.safeTitle == "Older")
+        #expect(overdue[1].task.safeTitle == "Newer")
     }
 
     // MARK: - Calendar Helpers
@@ -442,7 +444,7 @@ struct SwiftDataTests {
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
         let results = store.tasks(for: tomorrow)
-        #expect(results.contains { $0.task.title == "Explore this project" })
+        #expect(results.contains { $0.task.safeTitle == "Explore this project" })
     }
 
     @Test func tasksForDateWithNoTasksReturnsEmpty() {
@@ -459,7 +461,7 @@ struct SwiftDataTests {
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
         let results = store.tasks(for: tomorrow)
         for result in results {
-            #expect(result.project.tasks.contains { $0.id == result.task.id })
+            #expect(result.project.safeTasks.contains { $0.safeID == result.task.safeID })
         }
     }
 
@@ -474,7 +476,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let allTasks = store.allTasks()
         for item in allTasks {
-            #expect(item.project.tasks.contains { $0.id == item.task.id })
+            #expect(item.project.safeTasks.contains { $0.safeID == item.task.safeID })
         }
     }
 
@@ -485,16 +487,16 @@ struct SwiftDataTests {
         let project = store.projects[0]
         project.name = "Renamed"
         store.updateProject(project)
-        #expect(store.projects.contains { $0.name == "Renamed" })
+        #expect(store.projects.contains { $0.safeName == "Renamed" })
     }
 
     // MARK: - Delete Project by ID
 
     @Test func deleteProjectByIDRemovesProject() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.deleteProject(projectID)
-        #expect(store.projects.allSatisfy { $0.id != projectID })
+        #expect(store.projects.allSatisfy { $0.safeID != projectID })
     }
 
     @Test func deleteProjectByInvalidIDDoesNothing() {
@@ -508,39 +510,39 @@ struct SwiftDataTests {
 
     @Test func archiveProjectSetsIsArchived() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.archiveProject(projectID)
-        #expect(store.projects.first(where: { $0.id == projectID })?.isArchived == true)
+        #expect(store.projects.first(where: { $0.safeID == projectID })?.safeIsArchived == true)
     }
 
     @Test func archivedProjectExcludedFromActiveProjects() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.archiveProject(projectID)
-        #expect(store.activeProjects.allSatisfy { $0.id != projectID })
+        #expect(store.activeProjects.allSatisfy { $0.safeID != projectID })
     }
 
     @Test func archivedProjectAppearsInArchivedProjects() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.archiveProject(projectID)
-        #expect(store.archivedProjects.contains { $0.id == projectID })
+        #expect(store.archivedProjects.contains { $0.safeID == projectID })
     }
 
     @Test func unarchiveProjectRestoresProject() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.archiveProject(projectID)
-        #expect(store.activeProjects.allSatisfy { $0.id != projectID })
+        #expect(store.activeProjects.allSatisfy { $0.safeID != projectID })
         store.unarchiveProject(projectID)
-        #expect(store.activeProjects.contains { $0.id == projectID })
-        #expect(store.projects.first(where: { $0.id == projectID })?.isArchived == false)
+        #expect(store.activeProjects.contains { $0.safeID == projectID })
+        #expect(store.projects.first(where: { $0.safeID == projectID })?.safeIsArchived == false)
     }
 
     @Test func archiveInvalidProjectDoesNothing() {
         let store = makeStore()
         store.archiveProject(UUID())
-        #expect(store.projects.allSatisfy { !$0.isArchived })
+        #expect(store.projects.allSatisfy { !$0.safeIsArchived })
     }
 
     // MARK: - Archive Task
@@ -548,46 +550,46 @@ struct SwiftDataTests {
     @Test func archiveTaskSetsIsArchived() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let taskID = project.tasks[0].id
+        let projectID = project.safeID
+        let taskID = project.safeTasks[0].safeID
         store.archiveTask(taskID, in: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.first(where: { $0.id == taskID })?.isArchived == true)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.first(where: { $0.safeID == taskID })?.safeIsArchived == true)
     }
 
     @Test func archivedTaskExcludedFromActiveTasks() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let taskID = project.tasks[0].id
+        let projectID = project.safeID
+        let taskID = project.safeTasks[0].safeID
         store.archiveTask(taskID, in: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.activeTasks.allSatisfy { $0.id != projectID })
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.activeTasks.allSatisfy { $0.safeID != projectID })
     }
 
     @Test func unarchiveTaskRestoresTask() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let taskID = project.tasks[0].id
+        let projectID = project.safeID
+        let taskID = project.safeTasks[0].safeID
         store.archiveTask(taskID, in: projectID)
         store.unarchiveTask(taskID, in: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.activeTasks.contains { $0.id == taskID })
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.activeTasks.contains { $0.safeID == taskID })
     }
 
     @Test func archiveTaskInvalidProjectDoesNothing() {
         let store = makeStore()
-        let taskID = store.projects[0].tasks[0].id
+        let taskID = store.projects[0].safeTasks[0].safeID
         store.archiveTask(taskID, in: UUID())
-        #expect(store.projects[0].tasks.first(where: { $0.id == taskID })?.isArchived == false)
+        #expect(store.projects[0].safeTasks.first(where: { $0.safeID == taskID })?.safeIsArchived == false)
     }
 
     @Test func archiveTaskInvalidTaskDoesNothing() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         store.archiveTask(UUID(), in: projectID)
-        #expect(store.projects[0].tasks.allSatisfy { !$0.isArchived })
+        #expect(store.projects[0].safeTasks.allSatisfy { !$0.safeIsArchived })
     }
 
     // MARK: - Completed Projects
@@ -595,24 +597,24 @@ struct SwiftDataTests {
     @Test func completedProjectsListsFullyComplete() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        for task in project.tasks {
+        let projectID = project.safeID
+        for task in project.safeTasks {
             task.status = .completed
             store.updateTask(task, in: projectID)
         }
-        #expect(store.completedProjects.contains { $0.id == projectID })
+        #expect(store.completedProjects.contains { $0.safeID == projectID })
     }
 
     @Test func completedProjectsExcludesArchivedProjects() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        for task in project.tasks {
+        let projectID = project.safeID
+        for task in project.safeTasks {
             task.status = .completed
             store.updateTask(task, in: projectID)
         }
         store.archiveProject(projectID)
-        #expect(store.completedProjects.allSatisfy { $0.id != projectID })
+        #expect(store.completedProjects.allSatisfy { $0.safeID != projectID })
     }
 
     // MARK: - Calendar Helpers Exclude Archived
@@ -621,29 +623,29 @@ struct SwiftDataTests {
         let store = makeStore()
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
-        let projectID = store.projects.first(where: { $0.name == "Getting Started" })!.id
+        let projectID = store.projects.first(where: { $0.safeName == "Getting Started" })!.safeID
         store.archiveProject(projectID)
         let results = store.tasks(for: tomorrow)
-        #expect(results.allSatisfy { $0.project.id != projectID })
+        #expect(results.allSatisfy { $0.project.safeID != projectID })
     }
 
     @Test func tasksForDateExcludesArchivedTasks() {
         let store = makeStore()
         let calendar = Calendar.current
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now)!
-        let project = store.projects.first(where: { $0.name == "Getting Started" })!
-        let projectID = project.id
-        let taskID = project.tasks.first(where: { $0.title == "Explore this project" })!.id
+        let project = store.projects.first(where: { $0.safeName == "Getting Started" })!
+        let projectID = project.safeID
+        let taskID = project.safeTasks.first(where: { $0.safeTitle == "Explore this project" })!.safeID
         store.archiveTask(taskID, in: projectID)
         let results = store.tasks(for: tomorrow)
-        #expect(results.allSatisfy { $0.task.id != taskID })
+        #expect(results.allSatisfy { $0.task.safeID != taskID })
     }
 
     @Test func allTasksExcludesArchivedItems() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let taskID = project.tasks[0].id
+        let projectID = project.safeID
+        let taskID = project.safeTasks[0].safeID
         let initialCount = store.allTasks().count
         store.archiveTask(taskID, in: projectID)
         #expect(store.allTasks().count == initialCount - 1)
@@ -654,35 +656,35 @@ struct SwiftDataTests {
     @Test func addThenDeleteTask() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
-        let initialCount = project.tasks.count
+        let projectID = project.safeID
+        let initialCount = project.safeTasks.count
         let task = ProjectTask(title: "Temporary", dueDate: .now)
         store.addTask(task, to: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.count == initialCount + 1)
-        store.deleteTask(task.id, from: projectID)
-        let finalProject = store.projects.first { $0.id == projectID }!
-        #expect(finalProject.tasks.count == initialCount)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.count == initialCount + 1)
+        store.deleteTask(task.safeID, from: projectID)
+        let finalProject = store.projects.first { $0.safeID == projectID }!
+        #expect(finalProject.safeTasks.count == initialCount)
     }
 
     @Test func addThenUpdateTask() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "Original", dueDate: .now, priority: .low)
         store.addTask(task, to: projectID)
         task.title = "Modified"
         task.priority = .high
         store.updateTask(task, in: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let updated = updatedProject.tasks.first { $0.id == task.id }
-        #expect(updated?.title == "Modified")
-        #expect(updated?.priority == .high)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let updated = updatedProject.safeTasks.first { $0.safeID == task.safeID }
+        #expect(updated?.safeTitle == "Modified")
+        #expect(updated?.safePriority == .high)
     }
 
     @Test func deleteAllProjectsLeavesEmpty() {
         let store = makeStore()
-        let projectIDs = store.projects.map(\.id)
+        let projectIDs = store.projects.map(\.safeID)
         for id in projectIDs {
             store.deleteProject(id)
         }
@@ -711,7 +713,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Work Project", category: .work)
         store.addProject(project)
-        let found = store.projects.first { $0.name == "Work Project" }
+        let found = store.projects.first { $0.safeName == "Work Project" }
         #expect(found?.category == .work)
     }
 
@@ -720,7 +722,7 @@ struct SwiftDataTests {
         let project = store.projects[0]
         project.category = .education
         store.updateProject(project)
-        let updated = store.projects.first { $0.id == project.id }
+        let updated = store.projects.first { $0.safeID == project.safeID }
         #expect(updated?.category == .education)
     }
 
@@ -728,7 +730,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "No Category")
         store.addProject(project)
-        let found = store.projects.first { $0.name == "No Category" }
+        let found = store.projects.first { $0.safeName == "No Category" }
         #expect(found?.category == .other)
     }
 
@@ -752,7 +754,7 @@ struct SwiftDataTests {
         store.notificationManager = manager
         let project = Project(name: "Notification Test")
         store.addProject(project)
-        #expect(store.projects.contains { $0.name == "Notification Test" })
+        #expect(store.projects.contains { $0.safeName == "Notification Test" })
     }
 
     @Test func addTaskTriggersRescheduleWithoutCrash() {
@@ -760,11 +762,11 @@ struct SwiftDataTests {
         let manager = NotificationManager()
         store.notificationManager = manager
         let project = store.projects[0]
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "Notified Task", dueDate: .now, priority: .high)
         store.addTask(task, to: projectID)
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.contains { $0.title == "Notified Task" })
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.contains { $0.safeTitle == "Notified Task" })
     }
 
     @Test func rescheduleSkipsCompletedTasks() async {
@@ -779,8 +781,8 @@ struct SwiftDataTests {
             status: .completed,
             priority: .medium
         )
-        store.addTask(task, to: project.id)
-        let fetched = store.projects.first { $0.id == project.id }!
+        store.addTask(task, to: project.safeID)
+        let fetched = store.projects.first { $0.safeID == project.safeID }!
         await manager.rescheduleAll(for: [fetched])
     }
 
@@ -789,7 +791,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Empty Project")
         store.addProject(project)
-        let fetched = store.projects.first { $0.id == project.id }!
+        let fetched = store.projects.first { $0.safeID == project.safeID }!
         await manager.rescheduleAll(for: [fetched])
     }
 
@@ -797,35 +799,35 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "No Manager")
         store.addProject(project)
-        store.deleteProject(project.id)
+        store.deleteProject(project.safeID)
 
         let existingProject = store.projects[0]
-        let projectID = existingProject.id
+        let projectID = existingProject.safeID
         let task = ProjectTask(title: "Test", dueDate: .now)
         store.addTask(task, to: projectID)
         task.title = "Updated"
         store.updateTask(task, in: projectID)
-        store.deleteTask(task.id, from: projectID)
+        store.deleteTask(task.safeID, from: projectID)
     }
 
     // MARK: - Recurrence
 
     @Test func recurrenceDefaultsToNone() {
         let task = ProjectTask(title: "Test", dueDate: .now)
-        #expect(task.recurrenceRule == .none)
-        #expect(task.hasGeneratedNextOccurrence == false)
+        #expect(task.safeRecurrenceRule == .none)
+        #expect(task.safeHasGeneratedNextOccurrence == false)
     }
 
     @Test func recurrenceCanBeSetOnInit() {
         let task = ProjectTask(title: "Test", dueDate: .now, recurrenceRule: .weekly)
-        #expect(task.recurrenceRule == .weekly)
+        #expect(task.safeRecurrenceRule == .weekly)
     }
 
     @Test func completingRecurringTaskCreatesNextOccurrence() {
         let store = makeStore()
         let project = Project(name: "Recurrence Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let calendar = Calendar.current
         let dueDate = calendar.date(byAdding: .day, value: 1, to: .now)!
         let task = ProjectTask(
@@ -834,43 +836,43 @@ struct SwiftDataTests {
             recurrenceRule: .weekly
         )
         store.addTask(task, to: projectID)
-        let initialCount = store.projects.first { $0.id == projectID }!.tasks.count
+        let initialCount = store.projects.first { $0.safeID == projectID }!.safeTasks.count
 
         task.status = .completed
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.count == initialCount + 1)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.count == initialCount + 1)
 
-        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Weekly Task" }
+        let newTask = updatedProject.safeTasks.first { $0.safeID != task.safeID && $0.safeTitle == "Weekly Task" }
         #expect(newTask != nil)
-        #expect(newTask?.status == .notStarted)
-        #expect(newTask?.recurrenceRule == .weekly)
-        #expect(newTask?.priority == task.priority)
-        #expect(calendar.isDate(newTask!.dueDate, inSameDayAs: calendar.date(byAdding: .weekOfYear, value: 1, to: dueDate)!))
+        #expect(newTask?.safeStatus == .notStarted)
+        #expect(newTask?.safeRecurrenceRule == .weekly)
+        #expect(newTask?.safePriority == task.safePriority)
+        #expect(calendar.isDate(newTask!.safeDueDate, inSameDayAs: calendar.date(byAdding: .weekOfYear, value: 1, to: dueDate)!))
     }
 
     @Test func completingNonRecurringTaskDoesNotCreateOccurrence() {
         let store = makeStore()
         let project = Project(name: "No Recurrence Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "One-time Task", dueDate: .now)
         store.addTask(task, to: projectID)
-        let initialCount = store.projects.first { $0.id == projectID }!.tasks.count
+        let initialCount = store.projects.first { $0.safeID == projectID }!.safeTasks.count
 
         task.status = .completed
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        #expect(updatedProject.tasks.count == initialCount)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        #expect(updatedProject.safeTasks.count == initialCount)
     }
 
     @Test func completingRecurringTaskTwiceDoesNotDuplicate() {
         let store = makeStore()
         let project = Project(name: "No Duplicate Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(
             title: "Daily Task",
             dueDate: .now,
@@ -880,10 +882,10 @@ struct SwiftDataTests {
 
         task.status = .completed
         store.updateTask(task, in: projectID)
-        let countAfterFirst = store.projects.first { $0.id == projectID }!.tasks.count
+        let countAfterFirst = store.projects.first { $0.safeID == projectID }!.safeTasks.count
 
         store.updateTask(task, in: projectID)
-        let countAfterSecond = store.projects.first { $0.id == projectID }!.tasks.count
+        let countAfterSecond = store.projects.first { $0.safeID == projectID }!.safeTasks.count
 
         #expect(countAfterFirst == countAfterSecond)
     }
@@ -892,7 +894,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Cycle Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(
             title: "Cycling Task",
             dueDate: .now,
@@ -902,11 +904,11 @@ struct SwiftDataTests {
 
         task.status = .completed
         store.updateTask(task, in: projectID)
-        let countAfterComplete = store.projects.first { $0.id == projectID }!.tasks.count
+        let countAfterComplete = store.projects.first { $0.safeID == projectID }!.safeTasks.count
 
         task.status = .notStarted
         store.updateTask(task, in: projectID)
-        let countAfterCycle = store.projects.first { $0.id == projectID }!.tasks.count
+        let countAfterCycle = store.projects.first { $0.safeID == projectID }!.safeTasks.count
 
         #expect(countAfterComplete == countAfterCycle)
     }
@@ -915,7 +917,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Daily Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let calendar = Calendar.current
         let baseDate = calendar.date(byAdding: .day, value: 5, to: .now)!
         let task = ProjectTask(title: "Daily", dueDate: baseDate, recurrenceRule: .daily)
@@ -924,18 +926,18 @@ struct SwiftDataTests {
         task.status = .completed
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Daily" }
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let newTask = updatedProject.safeTasks.first { $0.safeID != task.safeID && $0.safeTitle == "Daily" }
         #expect(newTask != nil)
         let expectedDate = calendar.date(byAdding: .day, value: 1, to: baseDate)!
-        #expect(calendar.isDate(newTask!.dueDate, inSameDayAs: expectedDate))
+        #expect(calendar.isDate(newTask!.safeDueDate, inSameDayAs: expectedDate))
     }
 
     @Test func recurringTaskNextDueDate_monthly() {
         let store = makeStore()
         let project = Project(name: "Monthly Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let calendar = Calendar.current
         let baseDate = calendar.date(byAdding: .day, value: 5, to: .now)!
         let task = ProjectTask(title: "Monthly", dueDate: baseDate, recurrenceRule: .monthly)
@@ -944,18 +946,18 @@ struct SwiftDataTests {
         task.status = .completed
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Monthly" }
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let newTask = updatedProject.safeTasks.first { $0.safeID != task.safeID && $0.safeTitle == "Monthly" }
         #expect(newTask != nil)
         let expectedDate = calendar.date(byAdding: .month, value: 1, to: baseDate)!
-        #expect(calendar.isDate(newTask!.dueDate, inSameDayAs: expectedDate))
+        #expect(calendar.isDate(newTask!.safeDueDate, inSameDayAs: expectedDate))
     }
 
     @Test func completedRecurringTaskRetainsProperties() {
         let store = makeStore()
         let project = Project(name: "Retain Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(
             title: "Keep Me",
             details: "Important details",
@@ -968,18 +970,18 @@ struct SwiftDataTests {
         task.status = .completed
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let originalTask = updatedProject.tasks.first { $0.id == task.id }
-        #expect(originalTask?.status == .completed)
-        #expect(originalTask?.title == "Keep Me")
-        #expect(originalTask?.hasGeneratedNextOccurrence == true)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let originalTask = updatedProject.safeTasks.first { $0.safeID == task.safeID }
+        #expect(originalTask?.safeStatus == .completed)
+        #expect(originalTask?.safeTitle == "Keep Me")
+        #expect(originalTask?.safeHasGeneratedNextOccurrence == true)
     }
 
     // MARK: - Steps
 
     @Test func taskDefaultStepsIsEmpty() {
         let task = ProjectTask(title: "No steps", dueDate: .now)
-        #expect(task.steps.isEmpty)
+        #expect(task.safeSteps.isEmpty)
         #expect(task.completedStepsCount == 0)
     }
 
@@ -987,7 +989,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Steps Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let steps = [
             TaskStep(title: "Step A"),
             TaskStep(title: "Step B", isCompleted: true)
@@ -995,13 +997,13 @@ struct SwiftDataTests {
         let task = ProjectTask(title: "With Steps", dueDate: .now, steps: steps)
         store.addTask(task, to: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let savedTask = updatedProject.tasks.first { $0.id == task.id }!
-        #expect(savedTask.steps.count == 2)
-        #expect(savedTask.steps[0].title == "Step A")
-        #expect(savedTask.steps[0].isCompleted == false)
-        #expect(savedTask.steps[1].title == "Step B")
-        #expect(savedTask.steps[1].isCompleted == true)
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let savedTask = updatedProject.safeTasks.first { $0.safeID == task.safeID }!
+        #expect(savedTask.safeSteps.count == 2)
+        #expect(savedTask.safeSteps[0].title == "Step A")
+        #expect(savedTask.safeSteps[0].isCompleted == false)
+        #expect(savedTask.safeSteps[1].title == "Step B")
+        #expect(savedTask.safeSteps[1].isCompleted == true)
     }
 
     @Test func completedStepsCount() {
@@ -1034,7 +1036,7 @@ struct SwiftDataTests {
         let store = makeStore()
         let project = Project(name: "Recurrence Steps Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let calendar = Calendar.current
         let dueDate = calendar.date(byAdding: .day, value: 1, to: .now)!
         let steps = [
@@ -1052,31 +1054,31 @@ struct SwiftDataTests {
         task.status = .completed
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let newTask = updatedProject.tasks.first { $0.id != task.id && $0.title == "Recurring With Steps" }
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let newTask = updatedProject.safeTasks.first { $0.safeID != task.safeID && $0.safeTitle == "Recurring With Steps" }
         #expect(newTask != nil)
-        #expect(newTask!.steps.count == 2)
-        #expect(newTask!.steps[0].title == "S1")
-        #expect(newTask!.steps[0].isCompleted == false)
-        #expect(newTask!.steps[1].title == "S2")
-        #expect(newTask!.steps[1].isCompleted == false)
+        #expect(newTask!.safeSteps.count == 2)
+        #expect(newTask!.safeSteps[0].title == "S1")
+        #expect(newTask!.safeSteps[0].isCompleted == false)
+        #expect(newTask!.safeSteps[1].title == "S2")
+        #expect(newTask!.safeSteps[1].isCompleted == false)
     }
 
     @Test func editTaskStepsPersists() {
         let store = makeStore()
         let project = Project(name: "Edit Steps Test")
         store.addProject(project)
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "Edit Me", dueDate: .now)
         store.addTask(task, to: projectID)
 
         task.steps = [TaskStep(title: "New Step")]
         store.updateTask(task, in: projectID)
 
-        let updatedProject = store.projects.first { $0.id == projectID }!
-        let updatedTask = updatedProject.tasks.first { $0.id == task.id }!
-        #expect(updatedTask.steps.count == 1)
-        #expect(updatedTask.steps[0].title == "New Step")
+        let updatedProject = store.projects.first { $0.safeID == projectID }!
+        let updatedTask = updatedProject.safeTasks.first { $0.safeID == task.safeID }!
+        #expect(updatedTask.safeSteps.count == 1)
+        #expect(updatedTask.safeSteps[0].title == "New Step")
     }
 
     // MARK: - Export / Import
@@ -1086,7 +1088,7 @@ struct SwiftDataTests {
         let project = Project(name: "Export Test", descriptionText: "Desc", colorName: "purple", category: .work)
         store.addProject(project)
         let task = ProjectTask(title: "Task A", details: "Details A", dueDate: .now, status: .inProgress, priority: .high)
-        store.addTask(task, to: project.id)
+        store.addTask(task, to: project.safeID)
 
         let data = try store.exportAllAsJSON()
         let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
@@ -1110,7 +1112,7 @@ struct SwiftDataTests {
         store.addProject(project)
         let steps = [TaskStep(title: "S1", isCompleted: true), TaskStep(title: "S2")]
         let task = ProjectTask(title: "With Steps", dueDate: .now, steps: steps)
-        store.addTask(task, to: project.id)
+        store.addTask(task, to: project.safeID)
 
         let data = try store.exportAllAsJSON()
         let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
@@ -1128,7 +1130,7 @@ struct SwiftDataTests {
         let project = Project(name: "Recurrence Export")
         store.addProject(project)
         let task = ProjectTask(title: "Recurring", dueDate: .now, recurrenceRule: .weekly)
-        store.addTask(task, to: project.id)
+        store.addTask(task, to: project.safeID)
 
         let data = try store.exportAllAsJSON()
         let backup = try AppBackup.decoder.decode(AppBackup.self, from: data)
@@ -1180,15 +1182,15 @@ struct SwiftDataTests {
 
         #expect(count == 1)
         #expect(store.projects.count == initialCount + 1)
-        let imported = store.projects.first { $0.name == "Imported Project" }
+        let imported = store.projects.first { $0.safeName == "Imported Project" }
         #expect(imported != nil)
         #expect(imported?.descriptionText == "From backup")
         #expect(imported?.colorName == "green")
         #expect(imported?.category == .personal)
-        #expect(imported?.tasks.count == 1)
-        #expect(imported?.tasks[0].title == "Imported Task")
-        #expect(imported?.tasks[0].steps.count == 1)
-        #expect(imported?.tasks[0].steps[0].title == "Step 1")
+        #expect(imported?.safeTasks.count == 1)
+        #expect(imported?.safeTasks[0].safeTitle == "Imported Task")
+        #expect(imported?.safeTasks[0].safeSteps.count == 1)
+        #expect(imported?.safeTasks[0].safeSteps[0].title == "Step 1")
     }
 
     @Test func importIsAdditive() throws {
@@ -1240,37 +1242,37 @@ struct SwiftDataTests {
             recurrenceRule: .daily,
             steps: [TaskStep(title: "RT Step", isCompleted: true)]
         )
-        store.addTask(task, to: project.id)
+        store.addTask(task, to: project.safeID)
 
         // Export
         let data = try store.exportAllAsJSON()
 
         // Clear store
-        for p in store.projects { store.deleteProject(p.id) }
+        for p in store.projects { store.deleteProject(p.safeID) }
         #expect(store.projects.isEmpty)
 
         // Import
         let count = try store.importFromJSON(data)
         #expect(count >= 1)
 
-        let restored = store.projects.first { $0.name == "Round Trip" }
+        let restored = store.projects.first { $0.safeName == "Round Trip" }
         #expect(restored != nil)
         #expect(restored?.descriptionText == "Full test")
         #expect(restored?.category == .health)
         #expect(restored?.colorName == "red")
-        #expect(restored?.isArchived == true)
-        #expect(restored?.tasks.count == 1)
+        #expect(restored?.safeIsArchived == true)
+        #expect(restored?.safeTasks.count == 1)
 
-        let restoredTask = restored?.tasks[0]
-        #expect(restoredTask?.title == "RT Task")
-        #expect(restoredTask?.details == "RT Details")
-        #expect(restoredTask?.status == .completed)
-        #expect(restoredTask?.priority == .low)
-        #expect(restoredTask?.isArchived == true)
-        #expect(restoredTask?.recurrenceRule == .daily)
-        #expect(restoredTask?.steps.count == 1)
-        #expect(restoredTask?.steps[0].title == "RT Step")
-        #expect(restoredTask?.steps[0].isCompleted == true)
+        let restoredTask = restored?.safeTasks[0]
+        #expect(restoredTask?.safeTitle == "RT Task")
+        #expect(restoredTask?.safeDetails == "RT Details")
+        #expect(restoredTask?.safeStatus == .completed)
+        #expect(restoredTask?.safePriority == .low)
+        #expect(restoredTask?.safeIsArchived == true)
+        #expect(restoredTask?.safeRecurrenceRule == .daily)
+        #expect(restoredTask?.safeSteps.count == 1)
+        #expect(restoredTask?.safeSteps[0].title == "RT Step")
+        #expect(restoredTask?.safeSteps[0].isCompleted == true)
     }
 
     // MARK: - Performance Tests
@@ -1320,7 +1322,7 @@ struct SwiftDataTests {
 
     @Test func perfAddTasksToProject() {
         let store = makeStore()
-        let projectID = store.projects[0].id
+        let projectID = store.projects[0].safeID
         let clock = ContinuousClock()
         let elapsed = clock.measure {
             for i in 0..<100 {
@@ -1432,7 +1434,7 @@ struct SwiftDataTests {
                 title: "Overdue \(i)",
                 dueDate: calendar.date(byAdding: .day, value: -(i + 1), to: .now)!
             )
-            store.addTask(task, to: project.id)
+            store.addTask(task, to: project.safeID)
         }
         let clock = ContinuousClock()
         let elapsed = clock.measure {
@@ -1461,7 +1463,7 @@ struct SwiftDataTests {
     @Test func completedDateSetWhenTaskCompleted() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "Complete Me", dueDate: .now, status: .notStarted)
         store.addTask(task, to: projectID)
         #expect(task.completedDate == nil)
@@ -1471,16 +1473,16 @@ struct SwiftDataTests {
         task.completedDate = Date.now
         store.updateTask(task, in: projectID)
 
-        let updated = store.projects.first { $0.id == projectID }!
-            .tasks.first { $0.id == task.id }
+        let updated = store.projects.first { $0.safeID == projectID }!
+            .safeTasks.first { $0.safeID == task.safeID }
         #expect(updated?.completedDate != nil)
-        #expect(updated?.status == .completed)
+        #expect(updated?.safeStatus == .completed)
     }
 
     @Test func completedDateClearedWhenReopened() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "Reopen Me", dueDate: .now, status: .completed)
         store.addTask(task, to: projectID)
         #expect(task.completedDate != nil)
@@ -1490,16 +1492,16 @@ struct SwiftDataTests {
         task.completedDate = nil
         store.updateTask(task, in: projectID)
 
-        let updated = store.projects.first { $0.id == projectID }!
-            .tasks.first { $0.id == task.id }
+        let updated = store.projects.first { $0.safeID == projectID }!
+            .safeTasks.first { $0.safeID == task.safeID }
         #expect(updated?.completedDate == nil)
-        #expect(updated?.status == .inProgress)
+        #expect(updated?.safeStatus == .inProgress)
     }
 
     @Test func completedDatePreservedThroughExportImport() throws {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
+        let projectID = project.safeID
         let completedTask = ProjectTask(title: "Export Me", dueDate: .now, status: .completed)
         store.addTask(completedTask, to: projectID)
         let originalDate = completedTask.completedDate
@@ -1507,14 +1509,14 @@ struct SwiftDataTests {
         let data = try store.exportAllAsJSON()
 
         // Delete existing data
-        let ids = store.projects.map(\.id)
+        let ids = store.projects.map(\.safeID)
         for id in ids { store.deleteProject(id) }
         #expect(store.projects.isEmpty)
 
         // Import
         _ = try store.importFromJSON(data)
-        let imported = store.projects.first { $0.id == projectID }!
-            .tasks.first { $0.title == "Export Me" }
+        let imported = store.projects.first { $0.safeID == projectID }!
+            .safeTasks.first { $0.safeTitle == "Export Me" }
         #expect(imported?.completedDate != nil)
         // Dates should be within 1 second (ISO8601 rounding)
         if let orig = originalDate, let imp = imported?.completedDate {
@@ -1525,7 +1527,7 @@ struct SwiftDataTests {
     @Test func completedDatePreservedThroughUndoRedo() {
         let store = makeStore()
         let project = store.projects[0]
-        let projectID = project.id
+        let projectID = project.safeID
         let task = ProjectTask(title: "Undo Me", dueDate: .now, status: .completed)
         store.addTask(task, to: projectID)
         let originalDate = task.completedDate
@@ -1539,10 +1541,10 @@ struct SwiftDataTests {
 
         // Undo should restore the completedDate
         store.undo()
-        let restored = store.projects.first { $0.id == projectID }!
-            .tasks.first { $0.title == "Undo Me" }
+        let restored = store.projects.first { $0.safeID == projectID }!
+            .safeTasks.first { $0.safeTitle == "Undo Me" }
         #expect(restored?.completedDate != nil)
-        #expect(restored?.status == .completed)
+        #expect(restored?.safeStatus == .completed)
     }
 
     @Test func completedDateAutoSetForCompletedInit() {
