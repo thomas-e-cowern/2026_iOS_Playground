@@ -22,6 +22,11 @@ struct ProjectListView: View {
                         Label("No Projects", systemImage: "folder")
                     } description: {
                         Text("Tap + to create your first project.")
+                    } actions: {
+                        Button("Load Sample Project") {
+                            store.loadSampleData()
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
                 } else {
                     List(selection: $selectedProjectID) {

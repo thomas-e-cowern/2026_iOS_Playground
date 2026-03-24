@@ -51,16 +51,21 @@ class ProjectTask {
 
     // MARK: - Safe Accessors (non-optional wrappers for the rest of the codebase)
 
-    var safeID: UUID { id ?? UUID() }
-    var safeTitle: String { title ?? "" }
-    var safeDetails: String { details ?? "" }
-    var safeDueDate: Date { dueDate ?? .now }
-    var safeStatus: TaskStatus { status ?? .notStarted }
-    var safePriority: TaskPriority { priority ?? .medium }
-    var safeIsArchived: Bool { isArchived ?? false }
-    var safeRecurrenceRule: RecurrenceRule { recurrenceRule ?? .none }
-    var safeHasGeneratedNextOccurrence: Bool { hasGeneratedNextOccurrence ?? false }
-    var safeSteps: [TaskStep] { steps ?? [] }
+    /// Returns `false` when the object has been deleted from its context.
+    /// Objects that were never inserted (modelContext == nil) are still
+    /// accessible.
+    var isAccessible: Bool { !isDeleted }
+
+    var safeID: UUID { isAccessible ? (id ?? UUID()) : UUID() }
+    var safeTitle: String { isAccessible ? (title ?? "") : "" }
+    var safeDetails: String { isAccessible ? (details ?? "") : "" }
+    var safeDueDate: Date { isAccessible ? (dueDate ?? .now) : .now }
+    var safeStatus: TaskStatus { isAccessible ? (status ?? .notStarted) : .notStarted }
+    var safePriority: TaskPriority { isAccessible ? (priority ?? .medium) : .medium }
+    var safeIsArchived: Bool { isAccessible ? (isArchived ?? false) : false }
+    var safeRecurrenceRule: RecurrenceRule { isAccessible ? (recurrenceRule ?? .none) : .none }
+    var safeHasGeneratedNextOccurrence: Bool { isAccessible ? (hasGeneratedNextOccurrence ?? false) : false }
+    var safeSteps: [TaskStep] { isAccessible ? (steps ?? []) : [] }
 
     var completedStepsCount: Int {
         safeSteps.filter { $0.isCompleted }.count

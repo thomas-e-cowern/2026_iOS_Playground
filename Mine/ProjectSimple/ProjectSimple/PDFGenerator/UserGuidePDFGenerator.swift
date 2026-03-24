@@ -60,7 +60,8 @@ struct UserGuidePDFGenerator {
                 "16. Haptic Feedback",
                 "17. Statistics Dashboard",
                 "18. Apple Watch App",
-                "19. Tips & Tricks"
+                "19. iCloud Sync",
+                "20. Tips & Tricks"
             ]
             for item in tocItems {
                 y = drawBody(item, at: y)
@@ -72,7 +73,7 @@ struct UserGuidePDFGenerator {
             newPage()
             y = drawHeading("1. Getting Started", at: y)
             y += 4
-            y = drawBody("When you first launch ProjectSimple, a \"Getting Started\" project is created automatically with six tutorial tasks that walk you through the app's features. You can complete, edit, or delete these tasks as you explore.", at: y)
+            y = drawBody("When you first launch ProjectSimple, a sample \"Getting Started\" project is created with six tutorial tasks that walk you through the app's features. If you start with an empty project list (for example, after syncing from another device), you can tap the \"Load Sample Project\" button to add the tutorial project at any time. You can complete, edit, or delete these tasks as you explore.", at: y)
 
             // ── 2. App Navigation ───────────────────────────────────────
 
@@ -505,7 +506,7 @@ struct UserGuidePDFGenerator {
             space(60)
             y = drawSubheading("Data Sync", at: y)
             y += 4
-            y = drawBody("The watch app shares the same data as the iPhone app via a shared container. Changes made on either device are visible on the other. Pull down on the watch task list to refresh and pick up changes made on the iPhone.", at: y)
+            y = drawBody("The watch app shares the same data as the iPhone app via iCloud. Changes made on either device sync automatically. Pull down on the watch task list to refresh and pick up the latest changes.", at: y)
 
             y += 8
             space(60)
@@ -519,11 +520,34 @@ struct UserGuidePDFGenerator {
             y += 4
             y = drawBody("Tap any task to see its full detail including steps, priority, due date, and recurrence info. Haptic feedback confirms status changes on the watch.", at: y)
 
-            // ── 19. Tips & Tricks ───────────────────────────────────────
+            // ── 19. iCloud Sync ─────────────────────────────────────────
+
+            y += 20
+            space(80)
+            y = drawHeading("19. iCloud Sync", at: y)
+            y += 4
+            y = drawBody("ProjectSimple automatically syncs your projects and tasks across all your Apple devices using iCloud. Changes you make on one device appear on the others.", at: y)
+
+            y += 8
+            y = drawSubheading("How It Works", at: y)
+            y += 4
+            y = drawBullet("Automatic sync", detail: "Projects, tasks, and steps sync in the background via iCloud whenever you make changes.", at: y)
+            y = drawBullet("All devices", detail: "Works across iPhone, iPad, and Apple Watch when signed into the same iCloud account.", at: y)
+            y = drawBullet("No setup needed", detail: "Sync is enabled automatically. Just make sure iCloud is turned on in Settings.", at: y)
+
+            y += 8
+            space(60)
+            y = drawSubheading("Things to Know", at: y)
+            y += 4
+            y = drawBullet("First launch on a new device may take a moment while data syncs from iCloud.", at: y)
+            y = drawBullet("Changes sync when your device has a network connection. Edits made offline will sync the next time you're connected.", at: y)
+            y = drawBullet("If you see an empty project list on a new device, wait a moment for sync to complete or tap \"Load Sample Project\" to get started right away.", at: y)
+
+            // ── 20. Tips & Tricks ───────────────────────────────────────
 
             y += 20
             space(100)
-            y = drawHeading("19. Tips & Tricks", at: y)
+            y = drawHeading("20. Tips & Tricks", at: y)
             y += 4
             let tips = [
                 "Quick status change — Tap the status icon on any task to cycle through statuses without opening the edit view.",
@@ -533,7 +557,8 @@ struct UserGuidePDFGenerator {
                 "Widget for accountability — Add the medium home screen widget to always see your overdue tasks.",
                 "Siri for quick checks — Ask Siri for your task summary without picking up your phone.",
                 "Statistics insights — Check the Statistics tab weekly to see your completion trends and most productive day.",
-                "Watch quick actions — Use your Apple Watch to quickly mark tasks done without pulling out your phone."
+                "Watch quick actions — Use your Apple Watch to quickly mark tasks done without pulling out your phone.",
+                "iCloud sync — Your data syncs automatically across all your devices. Changes appear within seconds when connected to the internet."
             ]
             for tip in tips {
                 space(30)

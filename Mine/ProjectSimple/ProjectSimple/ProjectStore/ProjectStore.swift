@@ -28,22 +28,27 @@ class ProjectStore {
     var canUndo: Bool { !undoStack.isEmpty }
     var canRedo: Bool { !redoStack.isEmpty }
 
+    /// The live list of projects, excluding any that are mid-deletion.
+    private var liveProjects: [Project] {
+        projects.filter { $0.isAccessible }
+    }
+
     var activeProjects: [Project] {
-        projects.filter { !$0.safeIsArchived }
+        liveProjects.filter { !$0.safeIsArchived }
     }
 
     var archivedProjects: [Project] {
-        projects.filter { $0.safeIsArchived }
+        liveProjects.filter { $0.safeIsArchived }
     }
 
     var completedProjects: [Project] {
-        projects.filter { !$0.safeIsArchived && $0.completionPercentage == 1.0 }
+        liveProjects.filter { !$0.safeIsArchived && $0.completionPercentage == 1.0 }
     }
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         refreshProjects()
-        cleanupDuplicateGettingStarted()
+        loadSampleDataIfFirstLaunch()
         observeRemoteChanges()
         startSyncPolling()
     }
@@ -63,7 +68,7 @@ class ProjectStore {
     /// Polls for CloudKit changes on a timer as a fallback, since
     /// NSPersistentStoreRemoteChange may not always fire reliably.
     private func startSyncPolling() {
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
                 self?.pollForChanges()
@@ -71,37 +76,43 @@ class ProjectStore {
         }
     }
 
-    /// Checks if the store has new data by comparing a fresh fetch
-    /// against the current in-memory state.
-    private func pollForChanges() {
-        let freshContext = ModelContext(modelContext.container)
+    /// The last fingerprint we computed so we can detect changes on the
+    /// next poll without creating a separate ModelContext.
+    private var lastKnownFingerprint: String = ""
 
+    /// Checks if the store has new data by re-fetching from the main
+    /// context and comparing the fingerprint to the last known state.
+    private func pollForChanges() {
+        // Build a fingerprint from a fresh fetch on the MAIN context.
+        // This avoids creating a second ModelContext, which triggers
+        // "unsafeForcedSync" warnings from Swift Concurrency.
         let projectDescriptor = FetchDescriptor<Project>()
-        let freshProjects = (try? freshContext.fetch(projectDescriptor)) ?? []
+        let freshProjects = (try? modelContext.fetch(projectDescriptor)) ?? []
 
         let taskDescriptor = FetchDescriptor<ProjectTask>()
-        let freshTasks = (try? freshContext.fetch(taskDescriptor)) ?? []
+        let freshTasks = (try? modelContext.fetch(taskDescriptor)) ?? []
 
-        // Build a simple fingerprint of the fresh data so we can detect
-        // property-level changes (status, steps, title, etc.) and not
-        // just count changes.
         let freshFingerprint = buildFingerprint(projects: freshProjects, tasks: freshTasks)
-        let currentFingerprint = buildCurrentFingerprint()
 
-        if freshFingerprint != currentFingerprint {
-            print("📡 Poll detected changes")
-            refreshAfterRemoteChange()
+        if freshFingerprint != lastKnownFingerprint {
+            if !lastKnownFingerprint.isEmpty {
+                print("📡 Poll detected changes")
+                refreshAfterRemoteChange()
+            }
+            lastKnownFingerprint = freshFingerprint
         }
     }
 
-    /// Builds a string fingerprint from fresh context data.
+    /// Builds a string fingerprint from fetched data.
     private func buildFingerprint(projects: [Project], tasks: [ProjectTask]) -> String {
         let projectPart = projects
+            .filter { !$0.isDeleted }
             .sorted { ($0.id?.uuidString ?? "") < ($1.id?.uuidString ?? "") }
             .map { "\($0.id?.uuidString ?? ""):\($0.name ?? ""):\($0.isArchived ?? false)" }
             .joined(separator: "|")
 
         let taskPart = tasks
+            .filter { !$0.isDeleted }
             .sorted { ($0.id?.uuidString ?? "") < ($1.id?.uuidString ?? "") }
             .map { "\($0.id?.uuidString ?? ""):\($0.status?.rawValue ?? ""):\($0.isArchived ?? false):\($0.title ?? ""):\($0.steps?.count ?? 0)" }
             .joined(separator: "|")
@@ -109,52 +120,41 @@ class ProjectStore {
         return "\(projects.count);\(tasks.count);\(projectPart);\(taskPart)"
     }
 
-    /// Builds a fingerprint from the current in-memory state.
-    private func buildCurrentFingerprint() -> String {
-        let allTasks = projects.flatMap { $0.safeTasks }
-
-        let projectPart = projects
-            .sorted { $0.safeID.uuidString < $1.safeID.uuidString }
-            .map { "\($0.safeID.uuidString):\($0.safeName):\($0.safeIsArchived)" }
-            .joined(separator: "|")
-
-        let taskPart = allTasks
-            .sorted { $0.safeID.uuidString < $1.safeID.uuidString }
-            .map { "\($0.safeID.uuidString):\($0.safeStatus.rawValue):\($0.safeIsArchived):\($0.safeTitle):\($0.safeSteps.count)" }
-            .joined(separator: "|")
-
-        let totalTasks = allTasks.count
-        return "\(projects.count);\(totalTasks);\(projectPart);\(taskPart)"
-    }
-
     /// Forces the context to pick up any pending external changes
     /// (e.g. from CloudKit) and re-fetches the project list.
     func refreshAfterRemoteChange() {
-        // Persist any in-flight local edits so rollback won't lose them.
+        // Persist any in-flight local edits first.
         try? modelContext.save()
-        // Rollback clears unsaved changes and causes the context to
-        // re-fault objects on next access.
-        modelContext.rollback()
+        // Re-fetch from the main context. Do NOT call rollback() — it
+        // detaches in-memory objects while SwiftUI views still hold
+        // references, causing "backing data was detached" crashes.
         refreshProjects()
-        cleanupDuplicateGettingStarted()
+        // Update the poll fingerprint so we don't double-trigger.
+        let projectDescriptor = FetchDescriptor<Project>()
+        let allProjects = (try? modelContext.fetch(projectDescriptor)) ?? []
+        let taskDescriptor = FetchDescriptor<ProjectTask>()
+        let allTasks = (try? modelContext.fetch(taskDescriptor)) ?? []
+        lastKnownFingerprint = buildFingerprint(projects: allProjects, tasks: allTasks)
         // Bump the token so views that read it re-evaluate, even when
         // the same Project objects are returned with different task data.
         refreshToken += 1
-        print("🔄 Refreshed (token \(refreshToken)): \(projects.count) projects, \(projects.map { $0.safeTasks.count }.reduce(0, +)) total tasks")
+        let live = liveProjects
+        print("🔄 Refreshed (token \(refreshToken)): \(live.count) projects, \(live.map { $0.safeTasks.count }.reduce(0, +)) total tasks")
     }
 
     private func refreshProjects() {
-        // Fetch projects first.
         let projectDescriptor = FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)])
         let fetchedProjects = (try? modelContext.fetch(projectDescriptor)) ?? []
 
-        // Also fetch all tasks so the context has them registered and
-        // up to date — this ensures task property changes from CloudKit
-        // (status, steps, etc.) are reflected in the relationship arrays.
+        // Also fetch all tasks so their properties are current in the
+        // context — ensures CloudKit changes to task status, steps, etc.
+        // are reflected when views access the relationship arrays.
         let taskDescriptor = FetchDescriptor<ProjectTask>()
         _ = try? modelContext.fetch(taskDescriptor)
 
-        projects = fetchedProjects
+        // Filter out any deleted objects to prevent SwiftUI from
+        // accessing detached backing data.
+        projects = fetchedProjects.filter { !$0.isDeleted }
     }
 
     private func save() {
@@ -443,41 +443,26 @@ class ProjectStore {
 
     // MARK: - Sample Data
 
-    private func loadSampleDataIfNeeded() {
-        // With CloudKit, the local store is empty on launch and data
-        // arrives asynchronously.  Only insert sample data once per
-        // install, using a UserDefaults flag.
+    /// Loads sample data on the very first launch. Uses a UserDefaults
+    /// flag so it only runs once per install. Safe with CloudKit because
+    /// it never deletes anything — it only inserts when the store is empty.
+    private func loadSampleDataIfFirstLaunch() {
         let key = "hasLoadedSampleData"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
-        UserDefaults.standard.set(true, forKey: key)
 
         let descriptor = FetchDescriptor<Project>()
         let count = (try? modelContext.fetchCount(descriptor)) ?? 0
-        guard count == 0 else { return }
+        guard count == 0 else {
+            // Data already exists (e.g. synced from CloudKit), mark as done.
+            UserDefaults.standard.set(true, forKey: key)
+            return
+        }
 
         loadSampleData()
+        UserDefaults.standard.set(true, forKey: key)
     }
 
-    /// Removes ALL "Getting Started" projects that were duplicated by
-    /// earlier bugs.  Runs on every remote change and at init until no
-    /// more copies exist — CloudKit may keep syncing them down in waves.
-    func cleanupDuplicateGettingStarted() {
-        let gettingStarted = projects.filter { $0.safeName == "Getting Started" }
-        guard !gettingStarted.isEmpty else { return }
-
-        for project in gettingStarted {
-            let tasks = project.tasks ?? []
-            project.tasks?.removeAll()
-            for task in tasks {
-                modelContext.delete(task)
-            }
-            modelContext.delete(project)
-        }
-        save()
-        print("🧹 Deleted \(gettingStarted.count) Getting Started project(s)")
-    }
-
-    private func loadSampleData() {
+    func loadSampleData() {
         let calendar = Calendar.current
         let today = Date.now
 

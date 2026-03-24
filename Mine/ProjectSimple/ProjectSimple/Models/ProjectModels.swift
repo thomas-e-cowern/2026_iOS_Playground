@@ -59,15 +59,21 @@ class Project {
 
     // MARK: - Safe Accessors (non-optional wrappers for the rest of the codebase)
 
-    var safeID: UUID { id ?? UUID() }
-    var safeName: String { name ?? "" }
-    var safeDescription: String { descriptionText ?? "" }
-    var safeStartDate: Date { startDate ?? .now }
-    var safeEndDate: Date { endDate ?? .now }
-    var safeTasks: [ProjectTask] { tasks ?? [] }
-    var safeColorName: String { colorName ?? "blue" }
-    var safeCategory: ProjectCategory { category ?? .other }
-    var safeIsArchived: Bool { isArchived ?? false }
+    /// Returns `false` when the object has been deleted from its context.
+    /// Objects that were never inserted (modelContext == nil) are still
+    /// accessible.  All safe accessors check this first to avoid
+    /// "backing data was detached" crashes.
+    var isAccessible: Bool { !isDeleted }
+
+    var safeID: UUID { isAccessible ? (id ?? UUID()) : UUID() }
+    var safeName: String { isAccessible ? (name ?? "") : "" }
+    var safeDescription: String { isAccessible ? (descriptionText ?? "") : "" }
+    var safeStartDate: Date { isAccessible ? (startDate ?? .now) : .now }
+    var safeEndDate: Date { isAccessible ? (endDate ?? .now) : .now }
+    var safeTasks: [ProjectTask] { isAccessible ? (tasks ?? []) : [] }
+    var safeColorName: String { isAccessible ? (colorName ?? "blue") : "blue" }
+    var safeCategory: ProjectCategory { isAccessible ? (category ?? .other) : .other }
+    var safeIsArchived: Bool { isAccessible ? (isArchived ?? false) : false }
 
     var activeTasks: [ProjectTask] {
         safeTasks.filter { !$0.safeIsArchived }
@@ -76,7 +82,7 @@ class Project {
     var completionPercentage: Double {
         let active = activeTasks
         guard !active.isEmpty else { return 0 }
-        let completed = active.filter { $0.status == .completed }.count
+        let completed = active.filter { $0.safeStatus == .completed }.count
         return Double(completed) / Double(active.count)
     }
 }
