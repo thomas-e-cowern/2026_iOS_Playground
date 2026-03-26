@@ -31,6 +31,14 @@ struct ContentView: View {
             } label: {
                 Label("SpaceX View", systemImage: "arrow.left.circle")
             }
+
+            Divider()
+
+            NavigationLink {
+                PlatziModelView()
+            } label: {
+                Label("Platzi Model View", systemImage: "shippingbox")
+            }
         }
     }
 }
