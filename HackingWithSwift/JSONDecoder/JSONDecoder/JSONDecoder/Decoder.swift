@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@dynamicMemberLookup
 struct JSON: RandomAccessCollection {
     
     var value: Any?
@@ -77,6 +78,10 @@ struct JSON: RandomAccessCollection {
     }
 
     subscript(key: String) -> JSON {
+        optionalDictionary?[key] ?? JSON(value: nil)
+    }
+    
+    subscript(dynamicMember key: String) -> JSON {
         optionalDictionary?[key] ?? JSON(value: nil)
     }
 }
