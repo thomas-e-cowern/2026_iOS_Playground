@@ -8,14 +8,24 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State var objects = JSON(value: nil)
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            List {
+                ForEach(Array(objects.array.enumerated()), id: \.offset) { _, object in
+                    Text(object["title"].string)
+                }
+            }
         }
-        .padding()
+        .task {
+            do {
+                objects = try JSON(string: json)
+            } catch {
+                print("There was an error decoding json")
+            }
+        }
     }
 }
 
