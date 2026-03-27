@@ -10,6 +10,9 @@ import SwiftUI
 struct ContentView: View {
     
     @StateObject private var vm = UserViewModel()
+    @State private var showingAddSheet = false
+    @State private var newName = ""
+    @State private var newEmail = ""
     
     var body: some View {
         NavigationStack {
@@ -34,9 +37,40 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Add") {
-                        Task { await vm.create(name: "New User", email: "new@example.com") }
+                        newName = ""
+                        newEmail = ""
+                        showingAddSheet = true
                     }
                 }
+            }
+            .sheet(isPresented: $showingAddSheet) {
+                NavigationStack {
+                    Form {
+                        TextField("Name", text: $newName)
+                            .textContentType(.name)
+                            .autocorrectionDisabled()
+                        TextField("Email", text: $newEmail)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                    }
+                    .navigationTitle("New User")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showingAddSheet = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                showingAddSheet = false
+                                Task { await vm.create(name: newName, email: newEmail) }
+                            }
+                            .disabled(newName.isEmpty || newEmail.isEmpty)
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
             }
             .alert("Error", isPresented: Binding(
                 get: { vm.errorMessage != nil },

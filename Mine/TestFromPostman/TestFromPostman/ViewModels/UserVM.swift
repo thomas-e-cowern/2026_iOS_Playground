@@ -34,6 +34,7 @@ final class UserViewModel: ObservableObject {
         do {
             let created: User = try await service.post(Endpoint.Users.list, body: body)
             users.append(created)
+            print("User successfully saved")
         } catch {
             errorMessage = error.localizedDescription
         }
