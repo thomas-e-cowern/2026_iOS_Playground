@@ -70,7 +70,11 @@ struct PlatziModelView: View {
                         AsyncImage(url: URL(string: url)) { image in
                             image.resizable()
                         } placeholder: {
-                            ProgressView()
+                            Image(systemName: "photo.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100, height: 100)
+                                .foregroundColor(.gray)
                         }
                         .frame(width: 100, height: 100)
                         

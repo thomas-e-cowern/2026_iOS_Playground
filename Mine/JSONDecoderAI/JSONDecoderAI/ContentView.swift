@@ -39,6 +39,14 @@ struct ContentView: View {
             } label: {
                 Label("Platzi Model View", systemImage: "shippingbox")
             }
+
+            Divider()
+
+            NavigationLink {
+                SafeDecoderView()
+            } label: {
+                Label("Safe Decoder View", systemImage: "shield.checkered")
+            }
         }
     }
 }
