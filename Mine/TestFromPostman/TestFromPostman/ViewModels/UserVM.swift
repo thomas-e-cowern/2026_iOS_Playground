@@ -14,6 +14,7 @@ final class UserViewModel: ObservableObject {
     @Published var users: [User] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var successMessage: String?
 
     private let service = HTTPService()
 
@@ -34,7 +35,7 @@ final class UserViewModel: ObservableObject {
         do {
             let created: User = try await service.post(Endpoint.Users.list, body: body)
             users.append(created)
-            print("User successfully saved")
+            successMessage = "\(created.name) added successfully"
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -47,6 +48,7 @@ final class UserViewModel: ObservableObject {
             if let idx = users.firstIndex(where: { $0.id == user.id }) {
                 users[idx] = updated
             }
+            successMessage = "\(updated.name) updated successfully"
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -60,6 +62,7 @@ final class UserViewModel: ObservableObject {
             if let idx = users.firstIndex(where: { $0.id == user.id }) {
                 users[idx] = patched
             }
+            successMessage = "\(patched.name) renamed successfully"
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -71,7 +74,9 @@ final class UserViewModel: ObservableObject {
             let user = users[idx]
             do {
                 try await service.delete(Endpoint.Users.detail(id: user.id))
+                let deletedName = user.name
                 users.remove(at: idx)
+                successMessage = "\(deletedName) deleted successfully"
             } catch {
                 errorMessage = error.localizedDescription
             }

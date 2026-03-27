@@ -72,6 +72,14 @@ struct ContentView: View {
                 }
                 .presentationDetents([.medium])
             }
+            .alert("Success", isPresented: Binding(
+                get: { vm.successMessage != nil },
+                set: { if !$0 { vm.successMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(vm.successMessage ?? "")
+            }
             .alert("Error", isPresented: Binding(
                 get: { vm.errorMessage != nil },
                 set: { if !$0 { vm.errorMessage = nil } }
