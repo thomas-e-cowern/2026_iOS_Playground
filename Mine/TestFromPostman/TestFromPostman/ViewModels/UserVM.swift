@@ -73,7 +73,12 @@ final class UserViewModel: ObservableObject {
         for idx in offsets {
             let user = users[idx]
             do {
-                try await service.delete(Endpoint.Users.detail(id: user.id))
+                let endpoint = Endpoint.Users.detail(id: user.id)
+                let url = URL(string: endpoint.baseURL + endpoint.path)!
+                var request = URLRequest(url: url)
+                request.httpMethod = "DELETE"
+                let (data, _) = try await URLSession.shared.data(for: request)
+                print("DELETE /users/\(user.id) response: \(String(data: data, encoding: .utf8) ?? "No data")")
                 let deletedName = user.name
                 users.remove(at: idx)
                 successMessage = "\(deletedName) deleted successfully"
