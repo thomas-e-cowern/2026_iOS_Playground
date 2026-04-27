@@ -8,5 +8,5 @@
 import Foundation
 
 enum LoadingButtonState {
-    case idle, loading, success, error(String)
+    case idle, loading, success, error
 }

@@ -20,20 +20,41 @@ struct LoadingButtonModifier: ViewModifier {
                 .blue
         case .success:
                 .green
-        case .error(let string):
+        case .error:
                 .red
         }
     }
     
     func body(content: Content) -> some View {
-        content
+        Button {
+            action()
+        } label: {
+            ZStack {
+                switch state {
+                case .idle:
+                    Text(title)
+                case .loading:
+                    ProgressView()
+                case .success:
+                    Image(systemName: "checkmark")
+                case .error:
+                    Text("There was an error")
+                }
+            }
+            .bold()
             .padding()
-            .background(color, in: Capsule())
+            .background(color)
+            .foregroundStyle(.white)
+            .clipShape(.capsule)
+            .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(.plain)
+        .animation(.spring(), value: state)
     }
 }
 
 #Preview {
     Text("Hello, world!")
-        .modifier(LoadingButtonModifier(title: "Hi yah!", state: .constant(.idle), action: {})
+        .modifier(LoadingButtonModifier(title: "Hi yah!", state: .constant(.success), action: {})
         )
 }
