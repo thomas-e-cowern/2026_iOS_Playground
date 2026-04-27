@@ -8,14 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var state: LoadingButtonState = .idle
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        LoadingButton(title: "loading....", state: $state) {
+            animate()
         }
-        .padding()
+    }
+    
+    func animate() {
+        state = .loading
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            state = .success
+            
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            state = .idle
+        }
     }
 }
 
