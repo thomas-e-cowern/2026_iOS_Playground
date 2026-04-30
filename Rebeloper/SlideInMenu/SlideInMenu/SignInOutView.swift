@@ -9,7 +9,14 @@ import SwiftUI
 
 struct SignInOutView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack {
+            Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+                .font(.title)
+            Image(systemName: "door.french.open")
+                .resizable()
+                .frame(width: 100, height: 100)
+                .foregroundStyle(.blue)
+        }
     }
 }
 
