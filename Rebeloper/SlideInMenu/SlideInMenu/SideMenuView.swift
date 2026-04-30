@@ -16,25 +16,25 @@ struct SideMenuView: View {
             Button {
                 actionIndex(0)
             } label: {
-                Text("Home")
+                Text("🏠")
             }
             
             Button {
                 actionIndex(1)
             } label: {
-                Text("Profile")
+                Text("🧑‍💻")
             }
             
             Button {
                 actionIndex(2)
             } label: {
-                Text("Settings")
+                Text("⚙️")
             }
-
+            
             Button {
                 actionIndex(3)
             } label: {
-                Text("Sign Out")
+                Text("🚪")
             }
         }
         .padding(.vertical)
