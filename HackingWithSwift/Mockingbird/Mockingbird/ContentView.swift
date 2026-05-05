@@ -75,7 +75,7 @@ struct ContentView: View {
     func buildSchema(count: Int) throws -> GenerationSchema {
         let schemaProperties = properties.map { property in
             DynamicGenerationSchema.Property(
-                name: property.name,
+                name: property.name.camelCased,
                 description: property.propertyDescription.isEmpty ? nil : property.propertyDescription,
                 schema: property.type.dynamicSchema
             )
@@ -108,7 +108,7 @@ struct ContentView: View {
             var dict = [String: Any]()
 
             for property in properties {
-                let key = property.name
+                let key = property.name.camelCased
                 dict[key] = property.type.extractValue(from: item, key: key)
             }
 
