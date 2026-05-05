@@ -1,0 +1,135 @@
+[
+    {
+        "name": "Address",
+        "symbol": "mappin",
+        "presets": [
+            { "name": "City", "type": "String", "description": "City or town name" },
+            { "name": "Country", "type": "String", "description": "Country name" },
+            { "name": "Country Code", "type": "String", "description": "Two-letter code such as US, CA, GB, FR" },
+            { "name": "County", "type": "String", "description": "County or district name" },
+            { "name": "Latitude", "type": "Double", "description": "Between -90 and 90" },
+            { "name": "Longitude", "type": "Double", "description": "Between -180 and 180" },
+            { "name": "Postal Code", "type": "String", "description": "Postal or zip code" },
+            { "name": "Region", "type": "String", "description": "Geographic region or province" },
+            { "name": "State", "type": "String", "description": "US state or territory" },
+            { "name": "Street Address", "type": "String", "description": "Full street address with number" }
+        ]
+    },
+    {
+        "name": "Appearance",
+        "symbol": "paintpalette.fill",
+        "presets": [
+            { "name": "Clothing Size", "type": "String", "description": "XS, S, M, L, XL, XXL" },
+            { "name": "Color Name", "type": "String", "description": "Red, Blue, Green, etc" },
+            { "name": "Eye Color", "type": "String", "description": "Realistic human eye color" },
+            { "name": "Hair Color", "type": "String", "description": "Realistic human hair color" }
+        ]
+    },
+    {
+        "name": "Commerce",
+        "symbol": "cart.fill",
+        "presets": [
+            { "name": "Company Name", "type": "String", "description": "Realistic company or business name" },
+            { "name": "Credit Card Type", "type": "String", "description": "Visa, Mastercard, Amex, etc" },
+            { "name": "Currency Code", "type": "String", "description": "Three-letter code such as USD, EUR, GBP" },
+            { "name": "Department", "type": "String", "description": "Electronics, Clothing, etc" }
+        ]
+    },
+    {
+        "name": "Date & Time",
+        "symbol": "calendar",
+        "presets": [
+            { "name": "Date of Birth", "type": "String", "description": "YYYY-MM-DD format" },
+            { "name": "Day of Week", "type": "String", "description": "Monday, Tuesday, etc" },
+            { "name": "Month", "type": "String", "description": "January, February, etc" },
+            { "name": "Time", "type": "String", "description": "HH:MM in 24-hour notation" },
+            { "name": "Timestamp", "type": "String", "description": "ISO 8601 date and time" },
+            { "name": "Year", "type": "Integer", "description": "Between 1900 and 2026" }
+        ]
+    },
+    {
+        "name": "Education",
+        "symbol": "graduationcap.fill",
+        "presets": [
+            { "name": "Degree", "type": "String", "description": "BA, BS, MA, MS, PhD, MD" },
+            { "name": "GPA", "type": "Double", "description": "Between 0.0 and 4.0" },
+            { "name": "Graduation Year", "type": "Integer", "description": "Between 1960 and 2026" },
+            { "name": "Major", "type": "String", "description": "Academic field of study" },
+            { "name": "University", "type": "String", "description": "University or college name" }
+        ]
+    },
+    {
+        "name": "Internet",
+        "symbol": "globe",
+        "presets": [
+            { "name": "Domain Name", "type": "String", "description": "Realistic internet domain" },
+            { "name": "Email Address", "type": "String", "description": "Realistic email address" },
+            { "name": "IP Address", "type": "String", "description": "IPv4 dotted notation" },
+            { "name": "Password", "type": "String", "description": "Strong mixed-character password" },
+            { "name": "URL", "type": "String", "description": "Realistic website URL" },
+            { "name": "Username", "type": "String", "description": "Realistic username or screen name" }
+        ]
+    },
+    {
+        "name": "Location",
+        "symbol": "building.2.fill",
+        "presets": [
+            { "name": "Airport Code", "type": "String", "description": "Three-letter IATA code such as JFK, LAX, LHR" },
+            { "name": "Time Zone", "type": "String", "description": "America/New_York, Europe/London, etc" }
+        ]
+    },
+    {
+        "name": "Name",
+        "symbol": "person.fill",
+        "presets": [
+            { "name": "First Name", "type": "String", "description": "First or given name" },
+            { "name": "Full Name", "type": "String", "description": "Complete full name" },
+            { "name": "Last Name", "type": "String", "description": "Last name or surname" },
+            { "name": "Middle Name", "type": "String", "description": "Middle name" },
+            { "name": "Name Prefix", "type": "String", "description": "Mr, Mrs, Ms, Dr" },
+            { "name": "Nickname", "type": "String", "description": "Casual nickname or alias" },
+            { "name": "Phone Number", "type": "String", "description": "Realistic phone number" }
+        ]
+    },
+    {
+        "name": "Numeric",
+        "symbol": "number",
+        "presets": [
+            { "name": "Age", "type": "Integer", "description": "Between 0 and 120" },
+            { "name": "Percentage", "type": "Double", "description": "Between 0 and 100" },
+            { "name": "Quantity", "type": "Integer", "description": "Between 1 and 1000" },
+            { "name": "Rating", "type": "Double", "description": "Between 1.0 and 5.0" },
+            { "name": "Score", "type": "Integer", "description": "Between 0 and 100" }
+        ]
+    },
+    {
+        "name": "Personal",
+        "symbol": "person.text.rectangle",
+        "presets": [
+            { "name": "Bio", "type": "String", "description": "Short biographical description" },
+            { "name": "Gender", "type": "String", "description": "Gender identity" },
+            { "name": "Hobby", "type": "String", "description": "Hobby or leisure activity" },
+            { "name": "Job Title", "type": "String", "description": "Professional job title" },
+            { "name": "Language", "type": "String", "description": "Spoken language name" },
+            { "name": "Marital Status", "type": "String", "description": "Single, Married, Divorced, Widowed" },
+            { "name": "Nationality", "type": "String", "description": "Nationality or country of origin" }
+        ]
+    },
+    {
+        "name": "Social Media",
+        "symbol": "at",
+        "presets": [
+            { "name": "Handle", "type": "String", "description": "Username starting with @" },
+            { "name": "Platform", "type": "String", "description": "Twitter, Instagram, TikTok, LinkedIn, etc" }
+        ]
+    },
+    {
+        "name": "Vehicle",
+        "symbol": "car.fill",
+        "presets": [
+            { "name": "Car Make", "type": "String", "description": "Toyota, Ford, BMW, Tesla, etc" },
+            { "name": "Car Model", "type": "String", "description": "Camry, Mustang, Model 3, etc" },
+            { "name": "Model Year", "type": "Integer", "description": "Between 1990 and 2026" }
+        ]
+    }
+]
