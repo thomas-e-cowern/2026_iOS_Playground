@@ -8,11 +8,21 @@
 import SwiftUI
 
 struct PropertyRow: View {
+    @Bindable var property: PropertyDefinition
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        TextField("Property name", text: $property.name, prompt: Text("What should this be called?"))
+
+        TextField("Description", text: $property.propertyDescription, prompt: Text("e.g., Age in years, between 0 and 120."))
+
+        Picker("Type", selection: $property.type) {
+            ForEach(PropertyType.allCases) { type in
+                Text(type.rawValue).tag(type)
+            }
+        }
     }
 }
 
 #Preview {
-    PropertyRow()
+    PropertyRow(property: PropertyDefinition())
 }
