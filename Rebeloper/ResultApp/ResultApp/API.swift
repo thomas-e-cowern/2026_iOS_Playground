@@ -13,7 +13,7 @@ struct API {
     let person2 = DateConverter().randomBirthdateBetween(ageMin: 25, ageMax: 35)
     let person3 = DateConverter().randomBirthdateBetween(ageMin: 25, ageMax: 35)
     
-    func fetchProfiles(completion: @escaping([Profile]) -> ())  {
+    func fetchProfiles(completion: @escaping([Profile]?) -> ())  {
         let profile1 = Profile(name: "John", birthday: person1)
         let profile2 = Profile(name: "Jane", birthday: person3)
         let profile3 = Profile(name: "Bob", birthday: person3)
