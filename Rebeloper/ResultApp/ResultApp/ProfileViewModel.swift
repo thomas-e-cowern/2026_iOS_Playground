@@ -10,11 +10,18 @@ import Foundation
 @Observable
 class ProfileViewModel {
     var profiles: [Profile] = []
+    var errorMessage: String = ""
+    let api = API(error: nil)
+    
     
     func fetchProfiles() {
-        API().fetchProfiles { profiles in
-            guard let profiles else { return }
-            self.profiles = profiles
+        api.fetchProfiles { result in
+            switch result {
+            case .success(let profiles):
+                self.profiles = profiles
+            case .failure(let error):
+                self.errorMessage = error.localizedDescription
+            }
         }
     }
 }
