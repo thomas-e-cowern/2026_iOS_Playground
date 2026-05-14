@@ -13,15 +13,19 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if pvm.profiles.isEmpty {
-                VStack {
-                    Text("Loading Profiles...")
-                    ProgressView()
+            if pvm.errorMessage.isEmpty {
+                if pvm.profiles.isEmpty {
+                    VStack {
+                        Text("Loading Profiles...")
+                        ProgressView()
+                    }
+                } else {
+                    List(pvm.profiles) { profile in
+                        Text(profile.name)
+                    }
                 }
             } else {
-                List(pvm.profiles) { profile in
-                    Text(profile.name)
-                }
+                Text("There was an error: \(pvm.errorMessage)")
             }
         }
         .onAppear {
