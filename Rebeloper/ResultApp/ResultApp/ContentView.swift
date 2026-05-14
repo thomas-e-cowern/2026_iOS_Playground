@@ -8,14 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var pvm = ProfileViewModel()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            if pvm.profiles.isEmpty {
+                VStack {
+                    Text("Loading Profiles...")
+                    ProgressView()
+                }
+            } else {
+                List(pvm.profiles) { profile in
+                    Text(profile.name)
+                }
+            }
         }
-        .padding()
+        .onAppear {
+            pvm.fetchProfiles()
+        }
     }
 }
 
