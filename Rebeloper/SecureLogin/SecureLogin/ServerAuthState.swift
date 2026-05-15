@@ -11,3 +11,10 @@ enum ServerAuthState {
     case authenticated
     case notAuthenticated
 }
+
+enum AuthState {
+    case undefined
+    case authenticating
+    case authenticated
+    case notAuthenticated
+}
