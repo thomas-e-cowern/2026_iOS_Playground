@@ -8,14 +8,30 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var authState: AuthState = .undefined
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            switch authState {
+            case .undefined:
+                Text("")
+            case .authenticating:
+                Text("")
+            case .authenticated:
+                Text("")
+            case .notAuthenticated:
+                Text("")
+            }
         }
-        .padding()
+    }
+    
+    func authenticate() {
+        
+    }
+    
+    func signOut() {
+        
     }
 }
 
