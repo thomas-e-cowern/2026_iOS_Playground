@@ -9,19 +9,23 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var authState: AuthState = .undefined
+    @State private var authState: AuthState = .authenticated
     
     var body: some View {
         Group {
             switch authState {
             case .undefined:
-                Text("")
+                UndefinedView()
             case .authenticating:
-                Text("")
+                AuthenticatingView()
             case .authenticated:
-                Text("")
+                AuthenticatedView {
+                    signOut()
+                }
             case .notAuthenticated:
-                Text("")
+                NotAuthenticatedView {
+                    authenticate()
+                }
             }
         }
     }
