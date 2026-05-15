@@ -8,11 +8,25 @@
 import SwiftUI
 
 struct NotAuthenticatedView: View {
+    
+    let action: () -> Void
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ContentUnavailableView {
+            Image(systemName: "person.fill.xmark")
+                .font(.largeTitle)
+                .foregroundStyle(.red)
+                .padding(.bottom, 20)
+        } description: {
+            Text("Not Authenticated")
+                .font(.largeTitle)
+        } actions: {
+            Button("Authenticate", action: action)
+            .buttonStyle(.borderedProminent)
+        }
     }
 }
 
 #Preview {
-    NotAuthenticatedView()
+    NotAuthenticatedView(action: {})
 }
