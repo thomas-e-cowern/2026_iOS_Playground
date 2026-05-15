@@ -9,13 +9,16 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var authState: AuthState = .authenticated
+    @State private var authState: AuthState = .undefined
     
     var body: some View {
         Group {
             switch authState {
             case .undefined:
                 UndefinedView()
+                    .task {
+                        await checkAuth()
+                    }
             case .authenticating:
                 AuthenticatingView()
             case .authenticated:
@@ -30,12 +33,53 @@ struct ContentView: View {
         }
     }
     
+    func checkAuth() async {
+        do {
+            authState = .authenticating
+            let serverAuthState = try await Server.authState(.notAuthenticated)
+            switch serverAuthState {
+            case .authenticated:
+                authState = .authenticated
+            case .notAuthenticated:
+                authState = .notAuthenticated
+            }
+        } catch  {
+            print(error.localizedDescription)
+        }
+    }
+    
     func authenticate() {
-        
+        Task {
+            do {
+                authState = .authenticating
+                let serverAuthState = try await Server.authState(.authenticated)
+                switch serverAuthState {
+                case .authenticated:
+                    authState = .authenticated
+                case .notAuthenticated:
+                    authState = .notAuthenticated
+                }
+            } catch {
+                print(error.localizedDescription)
+            }
+        }
     }
     
     func signOut() {
-        
+        Task {
+            do {
+                authState = .authenticating
+                let serverAuthState = try await Server.authState(.notAuthenticated)
+                switch serverAuthState {
+                case .authenticated:
+                    authState = .authenticated
+                case .notAuthenticated:
+                    authState = .notAuthenticated
+                }
+            } catch {
+                print(error.localizedDescription)
+            }
+        }
     }
 }
 
