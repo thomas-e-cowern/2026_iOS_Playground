@@ -14,40 +14,49 @@ final class UserViewModel {
     private let mapper = UserMapper()
     
     func loadUsers() {
+        
         let json = """
-      [
-        {
-          "id": 1,
-          "full_name": "John Smith",
-          "email_address": "john.smith@example.com",
-          "created_at": "2026-05-20"
-        },
-        {
-          "id": 2,
-          "full_name": "Emily Johnson",
-          "email_address": "emily.johnson@example.com",
-          "created_at": "2026-05-18"
-        },
-        {
-          "id": 3,
-          "full_name": "Michael Brown",
-          "email_address": "michael.brown@example.com",
-          "created_at": "2026-05-15"
-        },
-        {
-          "id": 4,
-          "full_name": "Sophia Davis",
-          "email_address": "sophia.davis@example.com",
-          "created_at": "2026-05-12"
-        },
-        {
-          "id": 5,
-          "full_name": "Daniel Wilson",
-          "email_address": "daniel.wilson@example.com",
-          "created_at": "2026-05-10"
-        }
-      ]
-    """
+                    {
+                      "id": 1,
+                      "full_name": "John Smith",
+                      "email_address": "john.smith@example.com",
+                      "created_at": "2026-05-20"
+                    }
+            """
+        //        let json = """
+        //      [
+        //        {
+        //          "id": 1,
+        //          "full_name": "John Smith",
+        //          "email_address": "john.smith@example.com",
+        //          "created_at": "2026-05-20"
+        //        },
+        //        {
+        //          "id": 2,
+        //          "full_name": "Emily Johnson",
+        //          "email_address": "emily.johnson@example.com",
+        //          "created_at": "2026-05-18"
+        //        },
+        //        {
+        //          "id": 3,
+        //          "full_name": "Michael Brown",
+        //          "email_address": "michael.brown@example.com",
+        //          "created_at": "2026-05-15"
+        //        },
+        //        {
+        //          "id": 4,
+        //          "full_name": "Sophia Davis",
+        //          "email_address": "sophia.davis@example.com",
+        //          "created_at": "2026-05-12"
+        //        },
+        //        {
+        //          "id": 5,
+        //          "full_name": "Daniel Wilson",
+        //          "email_address": "daniel.wilson@example.com",
+        //          "created_at": "2026-05-10"
+        //        }
+        //      ]
+        //    """
         
         let data = Data(json.utf8)
         do {
@@ -66,9 +75,10 @@ final class UserViewModel {
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let json = try encoder.encode(dto)
+            let data = try encoder.encode(dto)
+            let jsonString = String(data: data, encoding: .utf8)!
             
-            print(json)
+            print(jsonString)
         } catch {
             print("error encoding: \(error.localizedDescription)")
         }
