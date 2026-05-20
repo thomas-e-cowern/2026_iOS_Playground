@@ -57,4 +57,20 @@ final class UserViewModel {
             print("There was an error... \(error.localizedDescription)")
         }
     }
+    
+    func sendUser() {
+        guard let user else { return }
+        
+        let dto = mapper.dto(from: user)
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let json = try encoder.encode(dto)
+            
+            print(json)
+        } catch {
+            print("error encoding: \(error.localizedDescription)")
+        }
+    }
 }
