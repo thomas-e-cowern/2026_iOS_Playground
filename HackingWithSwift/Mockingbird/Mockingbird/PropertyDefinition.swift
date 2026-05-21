@@ -16,4 +16,10 @@ class PropertyDefinition: Identifiable {
     var type: PropertyType = .string
 
     init() { }
+    
+    init(from preset: PresetProperty) {
+        name = preset.name
+        propertyDescription = preset.description
+        type = PropertyType(rawValue: preset.type) ?? .string
+    }
 }
