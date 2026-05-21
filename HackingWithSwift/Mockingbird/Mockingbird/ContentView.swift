@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var generatedJSON = ""
     @State private var isGenerating = false
     
+    let presetCategories: [PresetCategory] = Bundle.main.decode("Presets.json")
+    
     var canGenerate: Bool {
         isGenerating == false
         && prompt.isEmpty == false
@@ -43,8 +45,22 @@ struct ContentView: View {
                     }
                     
                     Section {
-                        Button("Add Property", systemImage: "plus") {
-                            properties.append(PropertyDefinition())
+                        Menu("Add Property", systemImage: "plus") {
+                            Section {
+                                Button("Blank") {
+                                    properties.append(PropertyDefinition())
+                                }
+                            }
+
+                            ForEach(presetCategories) { category in
+                                Menu(category.name, systemImage: category.symbol) {
+                                    ForEach(category.presets, id: \.self) { preset in
+                                        Button(preset.name) {
+                                            properties.append(PropertyDefinition(from: preset))
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     
