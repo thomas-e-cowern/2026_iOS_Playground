@@ -14,6 +14,15 @@ struct ContentView: View {
     @State private var generatedJSON = ""
     @State private var isGenerating = false
     
+    // Breaks large requests into reasonable sizes
+    private static let batchSize = 10
+    
+    @State private var itemCount = Double(Self.batchSize)
+    @State private var totalItemCount = 0
+    @State private var previewJSON = ""
+    @State private var errorMessage: String?
+    @State private var promptVariations: [String] = Bundle.main.decode("PromptVariations.json")
+    
     let presetCategories: [PresetCategory] = Bundle.main.decode("Presets.json")
     
     var canGenerate: Bool {
