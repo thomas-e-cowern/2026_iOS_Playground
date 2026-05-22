@@ -73,11 +73,28 @@ struct ContentView: View {
                         }
                     }
                     
-                    if generatedJSON.isEmpty == false {
+                    Section("Number of Items: \(Int(itemCount))") {
+                        Slider(value: $itemCount, in: Double(Self.batchSize)...1000, step: Double(Self.batchSize))
+                            .labelsHidden()
+                    }
+                    
+                    if previewJSON.isEmpty == false {
                         Section("Generated Output") {
-                            Text(generatedJSON)
+                            Text(previewJSON)
                                 .fontDesign(.monospaced)
                                 .textSelection(.enabled)
+
+                            if totalItemCount > Self.batchSize {
+                                Text("and \(totalItemCount - Self.batchSize) more…")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
+                    if let errorMessage {
+                        Section {
+                            Text(errorMessage)
+                                .foregroundStyle(.red)
                         }
                     }
                 }
@@ -87,6 +104,14 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItemGroup {
+                if generatedJSON.isEmpty == false && isGenerating == false {
+                    Button("Copy to Clipboard", systemImage: "doc.on.doc") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(generatedJSON, forType: .string)
+                    }
+                    .labelStyle(.titleAndIcon)
+                }
+                
                 if isGenerating {
                     ProgressView()
                 } else {
@@ -152,30 +177,62 @@ struct ContentView: View {
     func generate() {
         isGenerating = true
         generatedJSON = ""
+        errorMessage = nil
+        previewJSON = ""
+        totalItemCount = 0
+        
+        promptVariations.shuffle()
 
         Task {
             defer { isGenerating = false }
 
             do {
-                let schema = try buildSchema(count: 1)
+                var allItems = [[String: Any]]()
+                let batchCount = Int(itemCount) / Self.batchSize
+                let schema = try buildSchema(count: Self.batchSize)
                 let session = LanguageModelSession()
                 let options = GenerationOptions(
                     sampling: .random(probabilityThreshold: 1, seed: .random(in: 0...1000)),
                     temperature: 1
                 )
                 
-                var newItems = [[String: Any]]()
-                
-                for try await partial in session.streamResponse(to: prompt, schema: schema, options: options) {
-                    guard let generated = try? partial.content.value([GeneratedContent].self, forProperty: "items") else { continue }
-                    newItems = parseItems(generated)
-                    generatedJSON = makeJSON(from: newItems)
+                for batchIndex in 0..<batchCount {
+                    let variation = promptVariations[batchIndex % promptVariations.count]
+                    let instructions = "You are a mock data generator. Generate realistic, plausible sample data based on the user's description. Use only real places and names. \(variation)"
+
+                    let session = LanguageModelSession(instructions: instructions)
+
+                    let options = GenerationOptions(
+                        sampling: .random(probabilityThreshold: 1, seed: .random(in: 0...1000)),
+                        temperature: 1
+                    )
+
+                    let fullPrompt = "\(prompt)\n\nSeed: \(Int.random(in: 0...999999))"
+
+                    var newItems = [[String: Any]]()
+                    
+                    for try await partial in session.streamResponse(to: fullPrompt, schema: schema, options: options) {
+                        guard let generated = try? partial.content.value([GeneratedContent].self, forProperty: "items") else { continue }
+                        newItems = parseItems(generated)
+                        updatePreview(allItems + newItems)
+                    }
+                    
+                    allItems.append(contentsOf: newItems)
                 }
                 
+                generatedJSON = makeJSON(from: allItems)
+                
             } catch {
-                generatedJSON = error.localizedDescription
+                errorMessage = error.localizedDescription
             }
         }
+    }
+    
+    func updatePreview(_ allItems: [[String: Any]]) {
+        totalItemCount = allItems.count
+
+        let previewItems = Array(allItems.prefix(Self.batchSize))
+        previewJSON = makeJSON(from: previewItems)
     }
 }
 
