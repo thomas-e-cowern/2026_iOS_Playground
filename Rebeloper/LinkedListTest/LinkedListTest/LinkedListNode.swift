@@ -16,3 +16,21 @@ public final class LinkedListNode<Value> {
         self.next = next
     }
 }
+
+extension LinkedListNode: CustomStringConvertible, CustomDebugStringConvertible {
+    
+    public var description: String {
+        guard let next else {
+            return "\(value)"
+        }
+        return "\(value) -> " + String(describing: next)
+    }
+    
+    
+    public var debugDescription: String {
+        guard let next else {
+            return "\(value)"
+        }
+        return "\(value) -> " + String(describing: next)
+    }
+}
