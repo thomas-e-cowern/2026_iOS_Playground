@@ -16,10 +16,18 @@ struct ContentView: View {
             Button {
                 linkedList.push(1)
             } label: {
-                Text("Add to linked list")
+                Text("Push to linked list")
+            }
+            
+            Button {
+                linkedList.append(8)
+            } label: {
+                Text("Append to linked list")
             }
 
             Text("\(linkedList.description)")
+            
+            Text("Count: \(linkedList.count)")
         }
         .padding()
     }
