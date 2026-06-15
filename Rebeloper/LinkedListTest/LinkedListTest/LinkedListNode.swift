@@ -46,4 +46,27 @@ public struct LinkedList<Value> {
     }
     
     public private(set) var count: Int = 0
+    public var first: Value? {
+        head?.value
+    }
+    public var last: Value? {
+        tail?.value
+    }
+    
+    @discardableResult
+    public mutating func push(_ value: Value) ->LinkedListNode<Value> {
+        defer { count += 1 }
+        head = LinkedListNode(value: value, next: head)
+        return head!
+    }
+    
+    public mutating func append(_ value: Value) {
+        guard !isEmpty else {
+            push(value)
+            return
+        }
+        defer { count += 1 }
+        tail?.next = LinkedListNode(value: value)
+        tail = tail?.next
+    }
 }
