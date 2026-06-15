@@ -34,3 +34,16 @@ extension LinkedListNode: CustomStringConvertible, CustomDebugStringConvertible 
         return "\(value) -> " + String(describing: next)
     }
 }
+
+public struct LinkedList<Value> {
+    public private(set) var head: LinkedListNode<Value>?
+    public private(set) var tail: LinkedListNode<Value>?
+    
+    public init() {  }
+    
+    public var isEmpty: Bool {
+        head == nil
+    }
+    
+    public private(set) var count: Int = 0
+}
