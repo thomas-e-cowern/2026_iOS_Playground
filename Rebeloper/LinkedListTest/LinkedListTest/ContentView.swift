@@ -15,12 +15,14 @@ struct ContentView: View {
         VStack(spacing: 24) {
             Button {
                 linkedList.push(1)
+                linkedList.printList()
             } label: {
                 Text("Push to linked list")
             }
             
             Button {
                 linkedList.append(8)
+                linkedList.printList()
             } label: {
                 Text("Append to linked list")
             }
@@ -28,6 +30,8 @@ struct ContentView: View {
             Text("\(linkedList.description)")
             
             Text("Count: \(linkedList.count)")
+            
+            
         }
         .padding()
     }
