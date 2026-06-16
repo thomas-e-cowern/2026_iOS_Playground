@@ -66,7 +66,31 @@ public struct LinkedList<Value> {
             return
         }
         defer { count += 1 }
-        tail?.next = LinkedListNode(value: value)
-        tail = tail?.next
+        
+        // Traverses the list to find the actual last node and updates its 'next'
+        var current = head
+        while current?.next != nil {
+            current = current?.next
+        }
+        current?.next = LinkedListNode(value: value)
+    }
+    
+    func printList() {
+        var current = head
+        
+        while current != nil {
+            // Unwrapping the current node to print its value
+            if let node = current {
+                print(node.value, terminator: " -> ")
+                current = node.next
+            }
+        }
+        print("nil")
+    }
+    
+    func printRecursively(node: LinkedListNode<Value>?) {
+        guard let node = node else { return }
+        print(node.value)
+        printRecursively(node: node.next)
     }
 }
