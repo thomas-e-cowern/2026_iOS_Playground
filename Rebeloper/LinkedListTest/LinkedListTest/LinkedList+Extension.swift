@@ -18,15 +18,3 @@ extension LinkedList: CustomStringConvertible, CustomDebugStringConvertible {
         return String(reflecting: head)
     }
 }
-
-//extension LinkedList: CustomStringConvertible {
-//    public var description: String {
-//        var text = ""
-//        var node = head
-//        while node != nil {
-//            text += "\(node!.value) -> "
-//            node = node?.next
-//        }
-//        return text + "nil"
-//    }
-//}
