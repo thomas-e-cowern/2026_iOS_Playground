@@ -8,6 +8,7 @@
 import Foundation
 
 public final class LinkedListNode<Value> {
+    
     public var value: Value
     public var next: LinkedListNode?
     
@@ -18,7 +19,6 @@ public final class LinkedListNode<Value> {
 }
 
 extension LinkedListNode: CustomStringConvertible, CustomDebugStringConvertible {
-    
     public var description: String {
         guard let next else {
             return "\(value)"
@@ -79,6 +79,31 @@ public struct LinkedList<Value> {
         return tail!
     }
     
+    public func node(at index: Int) -> LinkedListNode<Value>? {
+        guard index >= 0 && index < count else { return nil }
+        
+        var currentNode = head
+        var currentIndex = 0
+        while currentNode != nil && currentIndex < index {
+            currentNode = currentNode!.next
+            currentIndex += 1
+        }
+        return currentNode
+    }
+    
+    @discardableResult
+    public mutating func insert(_ value: Value, after node: LinkedListNode<Value>) -> LinkedListNode<Value> {
+        
+        guard tail != node else {
+            return append(value)
+        }
+        
+        defer { count += 1 }
+        
+        node.next = LinkedListNode(value: value, next: node.next)
+        return node.next!
+    }
+    
     func printList() {
         var current = head
         
@@ -96,5 +121,11 @@ public struct LinkedList<Value> {
         guard let node = node else { return }
         print(node.value)
         printRecursively(node: node.next)
+    }
+}
+
+extension LinkedListNode: Equatable {
+    public static func == (lhs: LinkedListNode<Value>, rhs: LinkedListNode<Value>) -> Bool {
+        return lhs === rhs
     }
 }
