@@ -104,6 +104,12 @@ public struct LinkedList<Value> {
         return node.next!
     }
     
+    @discardableResult
+    public mutating func insert(_ value: Value, at index: Int) -> LinkedListNode<Value>? {
+        guard let prev = node(at: index - 1) else { return nil }
+        return insert(value, after: prev)
+    }
+    
     func printList() {
         var current = head
         
