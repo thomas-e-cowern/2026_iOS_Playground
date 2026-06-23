@@ -106,6 +106,13 @@ public struct LinkedList<Value> {
     
     @discardableResult
     public mutating func insert(_ value: Value, at index: Int) -> LinkedListNode<Value>? {
+        guard index >= 0 && index <= count else { return nil }
+        if index == 0 {
+            return push(value)
+        }
+        if index == count {
+            return append(value)
+        }
         guard let prev = node(at: index - 1) else { return nil }
         return insert(value, after: prev)
     }
