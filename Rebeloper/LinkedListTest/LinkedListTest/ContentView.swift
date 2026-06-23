@@ -11,14 +11,33 @@ struct ContentView: View {
     
     @State var linkedList = LinkedList<Int>()
     @State var input: Int = 0
+    @State var index: Int = 0
     
     var body: some View {
         VStack(spacing: 24) {
             
-            TextField("Enter a number", value: $input, format: .number)
-                .keyboardType(.numberPad)
-                .textFieldStyle(.roundedBorder)
-                .padding()
+            VStack(spacing: 0) {
+                Text("Enter a number")
+                TextField("Enter a number", value: $input, format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .padding()
+            }
+            
+            VStack(spacing: 0) {
+                Text("Enter the index")
+                TextField("Enter an index", value: $index, format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .padding()
+            }
+            
+            Button {
+                linkedList.insert(input, at: index)
+                linkedList.printList()
+            } label: {
+                Text("Insert value")
+            }
             
             Button {
                 linkedList.push(input)
