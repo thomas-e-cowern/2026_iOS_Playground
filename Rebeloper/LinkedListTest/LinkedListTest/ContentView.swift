@@ -66,6 +66,14 @@ struct ContentView: View {
             } label: {
                 Text("Remove last from linked list")
             }
+            
+            Button {
+                linkedList.removeAll()
+                linkedList.printList()
+            } label: {
+                Text("Remove all nodes from linked list")
+            }
+
 
             
             Text("\(linkedList.description)")
