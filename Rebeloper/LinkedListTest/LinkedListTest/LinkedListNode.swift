@@ -172,6 +172,16 @@ public struct LinkedList<Value> {
         return target.value
     }
     
+    @discardableResult
+    public mutating func remove(at index: Int) -> Value? {
+        guard index >= 0 && index < count else { return nil }
+        guard index != 0 else { return pop() }
+        guard index != count - 1 else { return removeLast() }
+        
+        guard let previous = node(at: index - 1) else { return nil }
+        return remove(after: previous)
+    }
+    
     public mutating func removeAll() {
         head = nil
         tail = nil
