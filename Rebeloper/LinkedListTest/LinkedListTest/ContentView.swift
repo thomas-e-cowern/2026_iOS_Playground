@@ -53,6 +53,14 @@ struct ContentView: View {
                 Text("Append to linked list")
             }
             
+            Button {
+                linkedList.pop()
+                linkedList.printList()
+            } label: {
+                Text("Pop from linked list")
+            }
+
+            
             Text("\(linkedList.description)")
             
             Text("Count: \(linkedList.count)")
