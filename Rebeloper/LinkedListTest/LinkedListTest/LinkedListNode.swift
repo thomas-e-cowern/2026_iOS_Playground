@@ -155,6 +155,23 @@ public struct LinkedList<Value> {
         return current.value
     }
 
+    @discardableResult
+    public mutating func remove(after node: LinkedListNode<Value>) -> Value? {
+        guard let target = node.next else { return nil }
+        
+        defer {
+            if target === tail {
+                tail = node
+            }
+            node.next = target.next
+            count -= 1
+        }
+        
+        
+        
+        return target.value
+    }
+    
     public mutating func removeAll() {
         head = nil
         tail = nil
