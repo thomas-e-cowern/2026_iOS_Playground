@@ -60,6 +60,13 @@ struct ContentView: View {
                 Text("Pop from linked list")
             }
 
+            Button {
+                linkedList.removeLast()
+                linkedList.printList()
+            } label: {
+                Text("Remove last from linked list")
+            }
+
             
             Text("\(linkedList.description)")
             
