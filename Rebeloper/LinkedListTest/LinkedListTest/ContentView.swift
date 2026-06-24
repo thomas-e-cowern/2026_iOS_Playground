@@ -68,8 +68,18 @@ struct ContentView: View {
             }
             
             Button {
+                linkedList.remove(at: index)
+                linkedList.printList()
+            } label: {
+                Text("Remove at index \(index)")
+            }
+
+            
+            Button {
                 linkedList.removeAll()
                 linkedList.printList()
+                index = 0
+                input = 0
             } label: {
                 Text("Remove all nodes from linked list")
             }
