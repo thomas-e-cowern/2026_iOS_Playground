@@ -117,6 +117,21 @@ public struct LinkedList<Value> {
         return insert(value, after: prev)
     }
     
+    @discardableResult
+    public mutating func pop() -> Value? {
+        guard let currentHead = head else {
+            tail = nil
+            return nil
+        }
+        
+        defer {
+            head = currentHead.next
+            count -= 1
+        }
+        
+        return currentHead.value
+    }
+    
     func printList() {
         var current = head
         
