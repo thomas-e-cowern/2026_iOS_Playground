@@ -153,7 +153,12 @@ public struct LinkedList<Value> {
         tail = prev
         
         return current.value
-        
+    }
+
+    public mutating func removeAll() {
+        head = nil
+        tail = nil
+        count = 0
     }
     
     func printList() {
