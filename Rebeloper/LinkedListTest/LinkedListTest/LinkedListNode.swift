@@ -132,6 +132,30 @@ public struct LinkedList<Value> {
         return currentHead.value
     }
     
+    @discardableResult
+    public mutating func removeLast() -> Value? {
+        guard let head else { return nil }
+        guard head.next != nil else { return pop() }
+        
+        defer {
+            count -= 1
+        }
+        
+        var prev = head
+        var current = head
+        
+        while let next = current.next {
+            prev = current
+            current = next
+        }
+        
+        prev.next = nil
+        tail = prev
+        
+        return current.value
+        
+    }
+    
     func printList() {
         var current = head
         
