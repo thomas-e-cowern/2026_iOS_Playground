@@ -12,30 +12,44 @@ struct ContentView: View {
     @State private var state: ViewState<[String]> = .loading
     
     var body: some View {
-        Group {
-            switch state {
-            case .loading:
-                ProgressView("Loading...")
-            case .empty:
-                Text("No data")
-            case .error(let string):
-                Text(string)
-                Button {
-                    Task {
-                        await loadData()
-                    }
-                } label: {
-                    Text("Retry")
-                }
-            case .success(let data):
-                List(data, id: \.self) {
-                    Text($0)
-                }
+//        Group {
+//            switch state {
+//            case .loading:
+//                ProgressView("Loading...")
+//            case .empty:
+//                Text("No data")
+//            case .error(let string):
+//                Text(string)
+//                Button {
+//                    Task {
+//                        await loadData()
+//                    }
+//                } label: {
+//                    Text("Retry")
+//                }
+//            case .success(let data):
+//                List(data, id: \.self) {
+//                    Text($0)
+//                }
+//            }
+//        }
+//        .task {
+//            await loadData()
+//        }
+        
+        StateView(state: state) { items in
+            List(items, id: \.self) {
+                Text($0)
+            }
+        } retry: {
+            Task {
+                await loadData()
             }
         }
         .task {
             await loadData()
         }
+
     }
     
     func loadData() async {
@@ -53,6 +67,7 @@ struct ContentView: View {
             }
         } catch  {
             print("There was an eror: \(error.localizedDescription)")
+            state = .error("Something went wrong")
         }
     }
 }
