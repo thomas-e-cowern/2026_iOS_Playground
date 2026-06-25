@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var translatingLanguages = [Language]()
     @State private var languageIndex = Int.max
     @State private var translationState = TranslationState.waiting
+    @State private var showingExporter = false
+    @State private var document = TranslationDocument(sourceLanguage: "en")
     
     @State private var configuration = TranslationSession.Configuration(source: Locale.Language(identifier: "en"), target: Locale.Language(identifier: "es"))
     
@@ -56,20 +58,46 @@ struct ContentView: View {
                 TextEditor(text: $input)
                     .font(.largeTitle)
 
-                Button("Create Translations", action: createAllTranslations)
+                Group {
+                    switch translationState {
+                    case .waiting:
+                        Button("Create Translations", action: createAllTranslations)
+                    case .creating:
+                        ProgressView()
+                    case .done:
+                        Button("Export") {
+                            showingExporter = true
+                        }
+                    }
+                }
+                .frame(height: 60)
             }
         }
         .translationTask(configuration, action: translate)
         .onChange(of: input) {
-            configuration.invalidate()
+            translationState = .waiting
         }
+        .onChange(of: languages, updateLanguages)
+        .fileExporter(isPresented: $showingExporter, document: document, contentType: .xcStrings, defaultFilename: "Localizable", onCompletion: handleSaveResult)
     }
+    
     
     func translate(using session: TranslationSession) async {
         do {
-            if translationState == .creating {
-                let result = try await session.translate(input)
-                print(result.targetText)
+            if translationState == .waiting {
+                try await session.prepareTranslation()
+            } else {
+                let inputStrings = input.components(separatedBy: .newlines)
+
+                let requests = inputStrings.map { TranslationSession.Request(sourceText: $0) }
+
+                for response in try await session.translations(from: requests) {
+                    let translationUnit = TranslationUnit(value: response.targetText)
+                    var currentTranslationString = document.strings[response.sourceText] ?? TranslationString()
+                    currentTranslationString.localizations[response.targetLanguage.minimalIdentifier] = TranslationLanguage(stringUnit: translationUnit)
+                    document.strings[response.sourceText] = currentTranslationString
+                    document.strings.removeAll()
+                }
 
                 languageIndex += 1
                 doNextTranslation()
@@ -97,6 +125,31 @@ struct ContentView: View {
         languageIndex = 0
         translationState = .creating
         doNextTranslation()
+    }
+    
+    func updateLanguages(oldValue: [Language], newValue: [Language]) {
+        let oldSet = Set(oldValue.filter(\.isSelected))
+        let newSet = Set(newValue.filter(\.isSelected))
+
+        // Subtract the old languages from the new languages.
+        let difference = newSet.subtracting(oldSet)
+
+        // Check to see if we had an addition.
+        if let newLanguage = difference.first {
+            configuration.source = Locale.Language(identifier: newLanguage.id)
+            configuration.invalidate()
+        }
+
+        translationState = .waiting
+    }
+    
+    func handleSaveResult(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            print("Saved to \(url)")
+        case .failure(let error):
+            print(error.localizedDescription)
+        }
     }
 }
 
