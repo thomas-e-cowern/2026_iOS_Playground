@@ -35,6 +35,36 @@ struct OnboardingView: View {
             }
         }
     }
+    
+    private var onboardingInterface: some View {
+        VStack {
+            pageIndicator(currentPage: $currentPage, numberOfPages: 4)
+                .padding(.top, 50)
+            
+            TabView(selection: $currentPage) {
+                welcomePage(page: 0)
+                    .tag(0)
+                notificationPage(page: 1)
+                    .tag(1)
+                locationPage(page: 2)
+                    .tag(2)
+                trackingPage(page: 3)
+                    .tag(3)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(.spring(), value: currentPage)
+            
+            Spacer()
+            
+            if currentPage == 3 {
+                getStartedButton
+            }
+        }
+    }
+    
+    private var welcomePage: some View {
+        OnboardingPage
+    }
 }
 
 
