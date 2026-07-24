@@ -36,3 +36,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 }
+
+extension Notification.Name {
+    static let locationPermissionGranted = Notification.Name("locationPermissionGranted")
+}
