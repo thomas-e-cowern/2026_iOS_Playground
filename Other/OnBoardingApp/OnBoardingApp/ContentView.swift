@@ -31,7 +31,7 @@ struct OnboardingView: View {
                         .ignoresSafeArea()
                     onboardingInterface
                 }
-                .onAppear(perform: setupLocationObserver)
+                .onAppear(perform: setUpLocationObserver)
             }
         }
     }
@@ -42,14 +42,13 @@ struct OnboardingView: View {
                 .padding(.top, 50)
             
             TabView(selection: $currentPage) {
-                welcomePage(page: 0)
+                welcomePage
                     .tag(0)
-                notificationPage(page: 1)
+                notificationPage
                     .tag(1)
-                locationPage(page: 2)
+                locationPage
                     .tag(2)
-                trackingPage(page: 3)
-                    .tag(3)
+                trackingPage
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(.spring(), value: currentPage)
@@ -63,19 +62,19 @@ struct OnboardingView: View {
     }
     
     private var welcomePage: some View {
-        OnboardingPage(image: Image(systemName: "hand.wave.fill"), title: "Welcome!", description: "Welcome to the app", buttonText: "Next", action: { withAnimation { currentPage = 1 }}, status: "")
+        OnboardingPage(image: Image(systemName: "hand.wave.fill"), title: "Welcome!", description: "Welcome to the app", buttonText: "Next", action: { withAnimation { currentPage = 1 }}, status: isOnboardingComplete ? "Onboarding complete" : "Not completed")
     }
     
     private var notificationPage: some View {
-        OnboardingPage(image: Image(systemName: "bell.fill"), title: "Notifications", description: "We need permission to send you notifications", buttonText: "Allow", action: { LocationManager.requestPermission }, status: notificationPermissionGranted ? "Allowed" : "Not allowed")
+        OnboardingPage(image: Image(systemName: "bell.fill"), title: "Notifications", description: "We need permission to send you notifications", buttonText: "Allow", action: requestNotificationPermission, status: notificationPermissionGranted ? "Allowed" : "Not allowed")
     }
     
     private var locationPage: some View {
-        OnboardingPage(image: Image(systemName: "location.fill"), title: "Location", description: "We need your location to show you the best deals", buttonText: "Allow", action: { LocationManager.setVersion(1) }, status: locationManager.isAuthorized ? "Allowed" : "Not allowed")
+        OnboardingPage(image: Image(systemName: "location.fill"), title: "Location", description: "We need your location to show you the best deals", buttonText: "Allow", action:  locationManager.requestPermission, status: locationManager.isAuthorized ? "Allowed" : "Not allowed")
     }
     
     private var trackingPage: some View {
-        OnboardingPage(image: Image(systemName: "person.crop.circle.badge.ellipsis"), title: "Tracking", description: "We use your location to show you the best deals", buttonText: "Got it", action: { withAnimation { isOnboardingComplete = true }}, status: locationManager.isAuthorized ? "Allowed" : "Not allowed")
+        OnboardingPage(image: Image(systemName: "person.crop.circle.badge.ellipsis"), title: "Tracking", description: "We use your location to show you the best deals", buttonText: "Got it", action: { requestTrackingPermission(); withAnimation { isOnboardingComplete = true }}, status: locationManager.isAuthorized ? "Allowed" : "Not allowed")
     }
     
     private var getStartedButton: some View {
@@ -90,6 +89,7 @@ struct OnboardingView: View {
     }
     
     private func requestNotificationPermission() {
+        print("Requesting notification permission")
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 if settings.authorizationStatus != .notDetermined {
@@ -123,13 +123,7 @@ struct OnboardingView: View {
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        OnboardingView()
     }
 }
 

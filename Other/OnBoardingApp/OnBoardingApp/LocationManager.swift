@@ -24,6 +24,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func requestPermission() {
+        print("Requested")
         manager.requestWhenInUseAuthorization()
     }
     
@@ -32,6 +33,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             self.authorizationStatus = manager.authorizationStatus
             if self.authorizationStatus != .notDetermined {
                 NotificationCenter.default.post(name: .locationPermissionGranted, object: nil)
+                print("Location permission granted")
             }
         }
     }
