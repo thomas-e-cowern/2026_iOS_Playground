@@ -6,15 +6,15 @@
 //
 
 import SwiftUI
-import Combine
 
-class Store: ObservableObject {
-    @Published var count: Int = 0
+@Observable
+class Store{
+    var count: Int = 0
 }
 
 struct ContentView: View {
     
-    @EnvironmentObject private var store: Store
+    @Environment(Store.self) private var store
     
     var body: some View {
         VStack {
@@ -26,6 +26,9 @@ struct ContentView: View {
                 Button("Increment") {
                     store.count += 1
                 }
+                
+                NumberListView()
+                LightbulbView()
             }
         }
         .padding()
@@ -34,17 +37,30 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environmentObject(Store())
+        .environment(Store())
 }
 
 struct NumberListView: View {
-    @EnvironmentObject private var store: Store
+//    @EnvironmentObject private var store: Store
     
     var body: some View {
         let _ = Self._printChanges()
         
         VStack {
             Text("Number List View")
+        }
+    }
+        
+}
+
+struct LightbulbView: View {
+//    @EnvironmentObject private var store: Store
+    
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        VStack {
+            Text("Lightbulb View")
         }
     }
         
