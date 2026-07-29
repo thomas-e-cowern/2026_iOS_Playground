@@ -8,8 +8,21 @@
 import SwiftUI
 
 struct UserListView: View {
+    
+    @Environment(\.httpClient) private var httpClient
+    @State private var users: [User] = []
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        List(users, id: \.id) { user in
+            Text(user.name)
+        }
+        .task {
+            do {
+                users = try await httpClient.fetchUsers()
+            } catch {
+                print("There was an error: \(error)")
+            }
+        }
     }
 }
 
