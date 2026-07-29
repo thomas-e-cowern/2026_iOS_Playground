@@ -41,7 +41,7 @@ struct ContentView: View {
 }
 
 struct NumberListView: View {
-//    @EnvironmentObject private var store: Store
+    @Environment(Store.self) private var store
     
     var body: some View {
         let _ = Self._printChanges()
