@@ -5,7 +5,7 @@
 //  Created by Thomas Cowern on 7/29/26.
 //
 
-import Foundation
+import SwiftUI
 
 struct HTTPClient {
     func fetchUsers() async throws -> [User] {
@@ -14,4 +14,8 @@ struct HTTPClient {
         let (data, response) = try await URLSession.shared.data(from: url!)
         return try JSONDecoder().decode([User].self, from: data)
     }
+}
+
+extension EnvironmentValues {
+    @Entry var httpClient = HTTPClient()
 }
