@@ -14,8 +14,7 @@ struct EnvironmentPlaygroundApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(store)
+            MainView()
         }
     }
 }
