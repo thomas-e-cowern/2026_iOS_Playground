@@ -32,6 +32,15 @@ class Store {
     var count: Int = 0
 }
 
+@Observable
+class PlatziStore {
+    let httpClient: HTTPCLientProtocol
+    
+    init (httpClient: HTTPCLientProtocol) {
+        self.httpClient = httpClient
+    }
+}
+
 struct ContentView: View {
     
     @Environment(Store.self) private var store
