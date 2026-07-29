@@ -43,10 +43,13 @@ class PlatziStore {
 
 struct ContentView: View {
     
-    @Environment(Store.self) private var store
+    @Environment(PlatziStore.self) private var store
     
     var body: some View {
-        
+        VStack {
+            ForEach(store.httpClient.loadCustomers(), id: \.self) { customer in
+                Text(customer)
+            }
         }
         .padding()
     }
@@ -54,7 +57,7 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environment(Store())
+        .environment(PlatziStore(httpClient: MockHttpClient()))
 }
 
 
