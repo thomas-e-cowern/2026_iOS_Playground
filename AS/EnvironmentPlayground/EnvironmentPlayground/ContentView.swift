@@ -7,8 +7,28 @@
 
 import SwiftUI
 
+protocol HTTPCLientProtocol {
+    func loadCustomers() -> [String]
+}
+
+struct HttpClient: HTTPCLientProtocol {
+    func loadCustomers() -> [String] {
+        [
+            "Bob",
+            "Alice",
+            "Charlie",
+        ]
+    }
+}
+
+struct MockHttpClient: HTTPCLientProtocol {
+    func loadCustomers() -> [String]  {
+        ["Bill", "Sarah", "John", "Mary"]
+    }
+}
+
 @Observable
-class Store{
+class Store {
     var count: Int = 0
 }
 
@@ -17,19 +37,7 @@ struct ContentView: View {
     @Environment(Store.self) private var store
     
     var body: some View {
-        VStack {
-            
-            let _ = Self._printChanges()
-            
-            VStack {
-                Text("\(store.count)")
-                Button("Increment") {
-                    store.count += 1
-                }
-                
-                NumberListView()
-                LightbulbView()
-            }
+        
         }
         .padding()
     }
@@ -40,31 +48,7 @@ struct ContentView: View {
         .environment(Store())
 }
 
-struct NumberListView: View {
-    @Environment(Store.self) private var store
-    
-    var body: some View {
-        let _ = Self._printChanges()
-        
-        VStack {
-            Text("Number List View")
-        }
-    }
-        
-}
 
-struct LightbulbView: View {
-//    @EnvironmentObject private var store: Store
-    
-    var body: some View {
-        let _ = Self._printChanges()
-        
-        VStack {
-            Text("Lightbulb View")
-        }
-    }
-        
-}
 
 
 
