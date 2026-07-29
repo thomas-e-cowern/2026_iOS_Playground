@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct EnvironmentPlaygroundApp: App {
+    
+    @State private var store = PlatziStore(httpClient: HttpClient())
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(store)
         }
     }
 }
