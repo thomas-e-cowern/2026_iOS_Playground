@@ -13,16 +13,20 @@ struct CustomerListView: View {
     
     var body: some View {
         List(customers) { customer in
-            NavigationLink {
-                Text(customer.name)
-            } label: {
+//            NavigationLink {
+//                Text(customer.name)
+//            } label: {
+//                CustomerCellView(customer: customer)
+//            }
+            NavigationLink(value: customer) {
                 CustomerCellView(customer: customer)
             }
-
         }
     }
 }
 
 #Preview {
-    CustomerListView(customers: Customer.sampleData)
+    NavigationStack {
+        CustomerListView(customers: Customer.sampleData)
+    }
 }

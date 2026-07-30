@@ -8,17 +8,27 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    let customers = Customer.sampleData
+    let employees = Employee.sampleData
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            CustomerListView(customers: customers)
+                .navigationDestination(for: Customer.self) { customer in
+                    Text(customer.name)
+                }
+            
+            EmployeeListView(employees: employees)
+                .navigationDestination(for: Employee.self) { employee in
+                    Text("Employee List Screen: \(employee.name)")
+                }
         }
-        .padding()
     }
 }
 
 #Preview {
-    ContentView()
+    NavigationStack {
+        ContentView()
+    }
 }
