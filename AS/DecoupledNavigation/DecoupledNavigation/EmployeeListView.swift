@@ -8,11 +8,16 @@
 import SwiftUI
 
 struct EmployeeListView: View {
+    
+    let employees: [Employee]
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+          List(employees) { employee in
+              Text(employee.name)
+        }
     }
 }
 
 #Preview {
-    EmployeeListView()
+    EmployeeListView(employees: Employee.sampleData)
 }
