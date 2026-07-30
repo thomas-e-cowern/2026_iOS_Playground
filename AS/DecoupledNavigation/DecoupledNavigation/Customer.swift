@@ -11,3 +11,10 @@ struct Customer: Identifiable, Hashable {
     let id = UUID()
     let name: String
 }
+
+
+extension Customer {
+    static var sampleData: [Customer] {
+        [Customer(name: "Kevin Smith"), Customer(name: "Leslie Knope"), Customer(name: "April Ludgate")]
+    }
+}
