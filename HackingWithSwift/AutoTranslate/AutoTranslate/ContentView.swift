@@ -16,6 +16,8 @@ struct ContentView: View {
     @State private var translationState = TranslationState.waiting
     @State private var showingExporter = false
     @State private var document = TranslationDocument(sourceLanguage: "en")
+    // Added this for no reason
+    
     
     @State private var configuration = TranslationSession.Configuration(source: Locale.Language(identifier: "en"), target: Locale.Language(identifier: "es"))
     
